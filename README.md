@@ -1,0 +1,331 @@
+# S3 Balance 管理面板
+
+S3 Balance 管理面板是一个基于 Vue 3 + TypeScript + Element Plus 开发的现代化 Web 管理界面，用于管理和监控 [S3 Balance](https://github.com/DullJZ/s3-balance) 负载均衡服务。
+
+## 功能特性
+
+### 核心功能
+
+- **仪表盘**：系统状态概览、关键指标展示、实时监控
+- **存储桶管理**：桶列表、桶详情、健康状态、配置管理
+- **负载均衡**：策略配置、负载分布可视化、性能统计
+- **统计监控**：详细统计数据、自定义查询、数据导出、趋势分析
+- **系统配置**：服务参数、数据库、S3 API、监控指标配置
+- **YAML 编辑器**：直接编辑完整配置文件，实时语法验证，格式化支持
+
+### 技术亮点
+
+- **现代化技术栈**：Vue 3 Composition API + TypeScript
+- **高性能构建**：Vite 5.x 开发服务器和构建工具
+- **企业级 UI**：Element Plus 组件库，美观易用
+- **数据可视化**：ECharts 图表库，丰富的图表类型
+- **响应式设计**：适配桌面和移动设备
+- **类型安全**：完整的 TypeScript 类型定义
+
+## 技术栈
+
+- **框架**：Vue 3.3+
+- **语言**：TypeScript 5.x
+- **构建工具**：Vite 5.x
+- **路由**：Vue Router 4.x
+- **状态管理**：Pinia 2.x
+- **UI 组件库**：Element Plus 2.4+
+- **图表库**：ECharts 5.4+
+- **HTTP 客户端**：Axios 1.6+
+- **YAML 解析**：js-yaml 4.1+
+
+## 快速开始
+
+### 环境要求
+
+- Node.js >= 18.0.0
+- pnpm >= 8.0.0（推荐）或 npm / yarn
+
+### 安装依赖
+
+```bash
+# 使用 pnpm（推荐）
+pnpm install
+
+# 或使用 npm
+npm install
+
+# 或使用 yarn
+yarn install
+```
+
+### 开发模式
+
+```bash
+# 启动开发服务器（默认端口 3000）
+pnpm dev
+
+# 或
+npm run dev
+```
+
+访问 http://localhost:3000 即可查看管理面板。
+
+### 生产构建
+
+```bash
+# 构建生产版本
+pnpm build
+
+# 预览生产构建
+pnpm preview
+```
+
+构建产物将输出到 `dist` 目录。
+
+## 项目结构
+
+```
+src/
+├── views/                    # 页面视图
+│   ├── Dashboard.vue         # 仪表盘
+│   ├── Bucket/               # 存储桶管理
+│   │   ├── BucketList.vue    # 桶列表
+│   │   └── BucketDetail.vue  # 桶详情
+│   ├── Balancer/             # 负载均衡
+│   │   └── BalancerConfig.vue
+│   ├── Statistics/           # 统计监控
+│   │   └── StatisticsView.vue
+│   └── Settings/             # 系统配置
+│       └── SystemConfig.vue
+│
+├── components/               # 通用组件
+│   ├── layout/               # 布局组件
+│   │   ├── Header.vue
+│   │   ├── Sidebar.vue
+│   │   └── MainLayout.vue
+│   ├── charts/               # 图表组件（待扩展）
+│   └── common/               # 通用组件（待扩展）
+│
+├── stores/                   # Pinia 状态管理（待实现）
+│
+├── services/                 # API 服务封装
+│   ├── api.ts                # Axios 实例配置
+│   └── stats.ts              # 统计相关 API
+│
+├── types/                    # TypeScript 类型定义
+│   ├── bucket.ts             # 存储桶类型
+│   ├── stats.ts              # 统计类型
+│   └── config.ts             # 配置类型
+│
+├── utils/                    # 工具函数
+│   └── format.ts             # 格式化工具
+│
+├── router/                   # 路由配置
+│   └── index.ts
+│
+├── assets/                   # 静态资源
+│   └── styles/               # 样式文件
+│       └── main.css
+│
+├── App.vue                   # 根组件
+└── main.ts                   # 入口文件
+```
+
+## 配置说明
+
+### 环境变量
+
+创建 `.env.local` 文件配置环境变量：
+
+```env
+# API 基础地址（可选，默认为空，使用代理）
+VITE_API_BASE_URL=
+
+# 其他自定义环境变量
+```
+
+### 开发代理配置
+
+项目已在 `vite.config.ts` 中配置了开发服务器代理，自动将以下请求转发到后端服务：
+
+```typescript
+proxy: {
+  '/api': {
+    target: 'http://localhost:8080',  // S3 Balance 后端服务地址
+    changeOrigin: true,
+  },
+  '/metrics': {
+    target: 'http://localhost:8080',
+    changeOrigin: true,
+  },
+  '/health': {
+    target: 'http://localhost:8080',
+    changeOrigin: true,
+  },
+}
+```
+
+如需修改后端服务地址，请编辑 `vite.config.ts` 中的 `target` 配置。
+
+## 部署
+
+### Nginx 部署
+
+1. 构建生产版本：
+
+```bash
+pnpm build
+```
+
+2. 将 `dist` 目录上传到服务器
+
+3. 配置 Nginx：
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    root /path/to/dist;
+    index index.html;
+
+    # 前端路由支持
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # API 代理
+    location /api {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location /metrics {
+        proxy_pass http://localhost:8080;
+    }
+
+    location /health {
+        proxy_pass http://localhost:8080;
+    }
+}
+```
+
+4. 重启 Nginx：
+
+```bash
+sudo nginx -s reload
+```
+
+### Docker 部署
+
+创建 `Dockerfile`：
+
+```dockerfile
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN npm install -g pnpm && pnpm install
+COPY . .
+RUN pnpm build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+构建和运行：
+
+```bash
+docker build -t s3-balance-web .
+docker run -d -p 80:80 --name s3-balance-web s3-balance-web
+```
+
+## 开发指南
+
+### 代码规范
+
+项目遵循以下代码规范：
+
+- 使用 TypeScript 严格模式
+- 使用 Vue 3 Composition API (`<script setup>`)
+- 组件命名使用 PascalCase
+- 文件命名使用 kebab-case
+- 使用 ESLint + Prettier 进行代码格式化
+
+### YAML 编辑器使用
+
+系统配置页面提供了 YAML 编辑器功能，支持直接编辑完整的配置文件。
+
+**主要功能**：
+- ✅ 实时语法验证
+- ✅ 自动格式化（2 空格缩进，120 字符行宽）
+- ✅ 手动验证和错误提示
+- ✅ 从表单配置同步
+- ✅ 导出为 YAML 文件
+
+详细使用指南请查看：[YAML 编辑器使用指南](./docs/yaml-editor-guide.md)
+
+### 添加新页面
+
+1. 在 `src/views/` 目录创建页面组件
+2. 在 `src/router/index.ts` 添加路由配置
+3. 在侧边栏菜单中显示（自动根据路由配置生成）
+
+### 调用后端 API
+
+1. 在 `src/types/` 定义 TypeScript 类型
+2. 在 `src/services/` 创建 API 服务文件
+3. 在组件中导入并使用
+
+示例：
+
+```typescript
+// src/services/example.ts
+import { request } from './api'
+
+export const exampleApi = {
+  getList(): Promise<any[]> {
+    return request.get('/api/example/list')
+  },
+  create(data: any): Promise<any> {
+    return request.post('/api/example', data)
+  },
+}
+
+// 在组件中使用
+import { exampleApi } from '@/services/example'
+
+const loadData = async () => {
+  const data = await exampleApi.getList()
+  // ...
+}
+```
+
+## 已知问题
+
+- [ ] 部分管理接口需要后端扩展支持（存储桶配置管理、系统配置管理）
+- [ ] 实时数据推送功能待实现（WebSocket）
+- [ ] 数据导出功能待完善
+- [ ] 部分页面使用模拟数据，需对接真实 API
+
+## 后续规划
+
+- [ ] 实现 Pinia 状态管理
+- [ ] 添加用户认证和权限管理
+- [ ] 实现 WebSocket 实时数据推送
+- [ ] 添加更多图表组件和可视化功能
+- [ ] 完善响应式布局，优化移动端体验
+- [ ] 添加单元测试和 E2E 测试
+- [ ] 国际化支持（i18n）
+- [ ] 暗黑模式切换
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request！
+
+## 许可证
+
+MIT License
+
+## 相关项目
+
+- [S3 Balance](https://github.com/DullJZ/s3-balance) - S3 兼容负载均衡服务
