@@ -135,6 +135,8 @@ import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
 import { formatBytes, formatNumber } from '@/utils/format'
 import { ElMessage } from 'element-plus'
+import { bucketApi } from '@/services/bucket'
+import { prometheusApi } from '@/services/prometheus'
 
 // 配置数据
 const config = ref({
@@ -163,13 +165,19 @@ onMounted(async () => {
 // 加载配置
 const loadConfig = async () => {
   try {
-    // TODO: 从 API 获取真实配置
-    config.value = {
-      strategy: 'least-space',
-      health_check_period: '30s',
-      update_stats_period: '60s',
-      retry_attempts: 3,
-      retry_delay: '1s',
+    // TODO: 后续从 API 获取真实配置
+    // 暂时从 localStorage 读取配置，如果没有则使用默认值
+    const savedConfig = localStorage.getItem('balancer-config')
+    if (savedConfig) {
+      config.value = JSON.parse(savedConfig)
+    } else {
+      config.value = {
+        strategy: 'least-space',
+        health_check_period: '30s',
+        update_stats_period: '60s',
+        retry_attempts: 3,
+        retry_delay: '1s',
+      }
     }
   } catch (error) {
     console.error('加载配置失败:', error)
@@ -179,43 +187,44 @@ const loadConfig = async () => {
 // 加载负载统计
 const loadLoadStats = async () => {
   try {
-    // TODO: 从 API 获取真实数据
-    const totalRequests = 10000
-    bucketLoadStats.value = [
-      {
-        name: 'my-bucket-1',
-        virtual: false,
-        weight: 10,
-        requestCount: 3200,
-        requestPercent: 32,
-        usedSpace: 1024 * 1024 * 1024 * 72,
-        availableSpace: 1024 * 1024 * 1024 * 28,
-        avgResponseTime: 45,
-        healthy: true,
-      },
-      {
-        name: 'my-bucket-2',
-        virtual: false,
-        weight: 5,
-        requestCount: 2800,
-        requestPercent: 28,
-        usedSpace: 1024 * 1024 * 1024 * 23,
-        availableSpace: 1024 * 1024 * 1024 * 27,
-        avgResponseTime: 52,
-        healthy: true,
-      },
-      {
-        name: 'my-bucket-3',
-        virtual: false,
-        weight: 15,
-        requestCount: 4000,
-        requestPercent: 40,
-        usedSpace: 1024 * 1024 * 1024 * 145,
-        availableSpace: 1024 * 1024 * 1024 * 55,
-        avgResponseTime: 38,
-        healthy: true,
-      },
-    ]
+    // 从 API 获取真实数据
+    const [buckets, bucketOperations] = await Promise.all([
+      bucketApi.getBuckets(),
+      prometheusApi.getBucketOperations(),
+    ])
+
+    // 获取每个桶的详细信息
+    const bucketsWithDetails = await Promise.all(
+      buckets.map(async (bucket) => {
+        const detail = await bucketApi.getBucketDetail(bucket.name)
+        const requestCount = bucketOperations[bucket.name] || 0
+
+        return {
+          name: bucket.name,
+          virtual: bucket.virtual ?? false,
+          weight: bucket.weight,
+          requestCount,
+          requestPercent: 0, // 会在下面计算
+          usedSpace: detail.stats?.used_size || 0,
+          availableSpace: detail.stats?.available_size || 0,
+          avgResponseTime: detail.health?.response_time || 0,
+          healthy: detail.health?.healthy ?? false,
+        }
+      })
+    )
+
+    // 计算请求百分比
+    const totalRequests = bucketsWithDetails.reduce((sum, b) => sum + b.requestCount, 0)
+    bucketsWithDetails.forEach((bucket) => {
+      bucket.requestPercent = totalRequests > 0
+        ? Math.round((bucket.requestCount / totalRequests) * 100)
+        : 0
+    })
+
+    bucketLoadStats.value = bucketsWithDetails
+
+    // 更新图表
+    updateCharts(bucketsWithDetails)
   } catch (error) {
     console.error('加载负载统计失败:', error)
   }
@@ -330,10 +339,41 @@ const refreshData = async () => {
   ElMessage.success('数据已刷新')
 }
 
+// 更新图表数据
+const updateCharts = (data: any[]) => {
+  // 更新请求分布图表
+  if (requestChart) {
+    const pieData = data.map((item) => ({
+      value: item.requestCount,
+      name: item.name,
+    }))
+    requestChart.setOption({
+      series: [{ data: pieData }],
+    })
+  }
+
+  // 更新存储容量分布图表
+  if (storageChart) {
+    const bucketNames = data.map((item) => item.name)
+    const usedData = data.map((item) => Math.round(item.usedSpace / (1024 * 1024 * 1024)))
+    const availableData = data.map((item) => Math.round(item.availableSpace / (1024 * 1024 * 1024)))
+
+    storageChart.setOption({
+      xAxis: { data: bucketNames },
+      series: [
+        { name: '已用空间', data: usedData },
+        { name: '可用空间', data: availableData },
+      ],
+    })
+  }
+}
+
 // 保存配置
 const saveConfig = async () => {
   try {
-    // TODO: 调用 API 保存配置
+    // TODO: 后续调用 API 保存配置
+    // 暂时保存到 localStorage
+    localStorage.setItem('balancer-config', JSON.stringify(config.value))
     ElMessage.success('配置已保存')
   } catch (error) {
     console.error('保存配置失败:', error)

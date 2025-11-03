@@ -113,6 +113,7 @@ import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
 import { formatBytes, formatNumber } from '@/utils/format'
 import { ElMessage } from 'element-plus'
+import { bucketApi } from '@/services/bucket'
 
 const route = useRoute()
 const router = useRouter()
@@ -155,18 +156,32 @@ onMounted(async () => {
 // 加载存储桶信息
 const loadBucketInfo = async () => {
   try {
-    // TODO: 从 API 获取真实数据
+    // 从 API 获取真实数据
+    const detail = await bucketApi.getBucketDetail(bucketName)
+
+    // 更新存储桶基本信息
     bucketInfo.value = {
-      name: bucketName,
-      virtual: bucketName.startsWith('user-'),
-      healthy: true,
-      endpoint: bucketName.startsWith('user-') ? '' : 'https://s3.amazonaws.com',
-      region: 'us-east-1',
-      max_size: '100GB',
-      weight: 10,
-      path_style: false,
-      enabled: true,
-      operation_limits: { type_a: 0, type_b: 0 },
+      name: detail.name,
+      virtual: detail.virtual ?? false,
+      healthy: detail.health?.healthy ?? false,
+      endpoint: detail.endpoint,
+      region: detail.region,
+      max_size: detail.max_size,
+      weight: detail.weight,
+      path_style: detail.path_style,
+      enabled: detail.enabled,
+      operation_limits: detail.operation_limits,
+    }
+
+    // 更新统计数据
+    if (detail.stats) {
+      stats.value = {
+        object_count: detail.stats.object_count || 0,
+        total_size: detail.stats.total_size || 0,
+        used_size: detail.stats.used_size || 0,
+        available_size: detail.stats.available_size || 0,
+        usage_percent: detail.stats.usage_percent || 0,
+      }
     }
   } catch (error) {
     console.error('加载存储桶信息失败:', error)
@@ -174,18 +189,20 @@ const loadBucketInfo = async () => {
   }
 }
 
-// 加载统计数据
+// 加载统计数据（刷新时调用）
 const loadStats = async () => {
   try {
-    // TODO: 从 API 获取真实数据
-    const usedSize = 1024 * 1024 * 1024 * 65 // 65GB
-    const totalSize = 1024 * 1024 * 1024 * 100 // 100GB
-    stats.value = {
-      object_count: 3256,
-      total_size: totalSize,
-      used_size: usedSize,
-      available_size: totalSize - usedSize,
-      usage_percent: (usedSize / totalSize) * 100,
+    // 从 API 获取真实数据
+    const detail = await bucketApi.getBucketDetail(bucketName)
+
+    if (detail.stats) {
+      stats.value = {
+        object_count: detail.stats.object_count || 0,
+        total_size: detail.stats.total_size || 0,
+        used_size: detail.stats.used_size || 0,
+        available_size: detail.stats.available_size || 0,
+        usage_percent: detail.stats.usage_percent || 0,
+      }
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)

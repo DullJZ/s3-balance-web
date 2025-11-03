@@ -144,6 +144,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Search, Folder, Files } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { bucketApi } from '@/services/bucket'
 
 const router = useRouter()
 
@@ -186,66 +187,30 @@ onMounted(async () => {
 
 const loadBuckets = async () => {
   try {
-    // TODO: 从 API 获取真实数据
-    // 模拟数据
-    virtualBuckets.value = [
-      {
-        name: 'user-bucket-1',
-        region: 'us-east-1',
-        max_size: '100GB',
-        usage_percent: 65.5,
-        weight: 10,
-        enabled: true,
-        healthy: true,
-        virtual: true,
-      },
-      {
-        name: 'user-bucket-2',
-        region: 'us-east-1',
-        max_size: '50GB',
-        usage_percent: 38.2,
-        weight: 10,
-        enabled: true,
-        healthy: true,
-        virtual: true,
-      },
-    ]
+    // 从 API 获取真实数据
+    const buckets = await bucketApi.getBuckets()
 
-    realBuckets.value = [
-      {
-        name: 'my-bucket-1',
-        endpoint: 'https://s3.amazonaws.com',
-        region: 'us-east-1',
-        max_size: '100GB',
-        usage_percent: 72.8,
-        weight: 10,
-        enabled: true,
-        healthy: true,
-        virtual: false,
-      },
-      {
-        name: 'my-bucket-2',
-        endpoint: 'http://localhost:9000',
-        region: 'us-east-1',
-        max_size: '50GB',
-        usage_percent: 45.6,
-        weight: 5,
-        enabled: true,
-        healthy: true,
-        virtual: false,
-      },
-      {
-        name: 'my-bucket-3',
-        endpoint: 'https://oss-cn-hangzhou.aliyuncs.com',
-        region: 'cn-hangzhou',
-        max_size: '200GB',
-        usage_percent: 0,
-        weight: 15,
-        enabled: false,
-        healthy: false,
-        virtual: false,
-      },
-    ]
+    // 获取每个桶的详细信息（包含使用率和健康状态）
+    const bucketsWithDetails = await Promise.all(
+      buckets.map(async (bucket) => {
+        const detail = await bucketApi.getBucketDetail(bucket.name)
+        return {
+          name: bucket.name,
+          endpoint: bucket.endpoint,
+          region: bucket.region,
+          max_size: bucket.max_size,
+          usage_percent: detail.stats?.usage_percent ?? 0,
+          weight: bucket.weight,
+          enabled: bucket.enabled,
+          healthy: detail.health?.healthy ?? false,
+          virtual: bucket.virtual ?? false,
+        }
+      })
+    )
+
+    // 分离虚拟桶和真实桶
+    virtualBuckets.value = bucketsWithDetails.filter((b) => b.virtual)
+    realBuckets.value = bucketsWithDetails.filter((b) => !b.virtual)
   } catch (error) {
     console.error('加载存储桶失败:', error)
     ElMessage.error('加载存储桶失败')
