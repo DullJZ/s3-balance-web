@@ -171,15 +171,14 @@ const bucketUsageChartRef = ref<HTMLElement>()
 const operationChartRef = ref<HTMLElement>()
 let bucketUsageChart: ECharts | null = null
 let operationChart: ECharts | null = null
+let refreshTimer: number | null = null
 
 // 初始化数据
 onMounted(async () => {
   await loadData()
   initCharts()
   // 自动刷新（每30秒）
-  const timer = setInterval(refreshData, 30000)
-  // 清理定时器
-  onUnmounted(() => clearInterval(timer))
+  refreshTimer = setInterval(refreshData, 30000)
 })
 
 // 加载数据
@@ -291,6 +290,11 @@ const updateCharts = (buckets: any[], bucketDetails: any[], bucketOperations: Re
 // 初始化图表
 const initCharts = () => {
   if (bucketUsageChartRef.value) {
+    // 先销毁旧实例（如果存在）
+    if (bucketUsageChart) {
+      bucketUsageChart.dispose()
+      bucketUsageChart = null
+    }
     bucketUsageChart = echarts.init(bucketUsageChartRef.value)
     bucketUsageChart.setOption({
       tooltip: {
@@ -335,6 +339,11 @@ const initCharts = () => {
   }
 
   if (operationChartRef.value) {
+    // 先销毁旧实例（如果存在）
+    if (operationChart) {
+      operationChart.dispose()
+      operationChart = null
+    }
     operationChart = echarts.init(operationChartRef.value)
     operationChart.setOption({
       tooltip: {
@@ -406,9 +415,24 @@ const viewBucketDetail = (name: string) => {
 
 // 组件卸载时清理
 onUnmounted(() => {
+  // 清理定时器
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+  }
+
+  // 移除事件监听
   window.removeEventListener('resize', handleResize)
-  bucketUsageChart?.dispose()
-  operationChart?.dispose()
+
+  // 销毁图表实例
+  if (bucketUsageChart) {
+    bucketUsageChart.dispose()
+    bucketUsageChart = null
+  }
+  if (operationChart) {
+    operationChart.dispose()
+    operationChart = null
+  }
 })
 </script>
 

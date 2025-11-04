@@ -147,6 +147,11 @@ const stats = ref({
 const historyChartRef = ref<HTMLElement>()
 let historyChart: ECharts | null = null
 
+// 窗口调整处理函数（需要保存引用以便移除监听）
+const handleResize = () => {
+  historyChart?.resize()
+}
+
 onMounted(async () => {
   await loadBucketInfo()
   await loadStats()
@@ -213,6 +218,12 @@ const loadStats = async () => {
 const initHistoryChart = () => {
   if (!historyChartRef.value) return
 
+  // 先销毁旧实例（如果存在）
+  if (historyChart) {
+    historyChart.dispose()
+    historyChart = null
+  }
+
   historyChart = echarts.init(historyChartRef.value)
   historyChart.setOption({
     tooltip: {
@@ -253,7 +264,7 @@ const initHistoryChart = () => {
     ],
   })
 
-  window.addEventListener('resize', () => historyChart?.resize())
+  window.addEventListener('resize', handleResize)
 }
 
 // 刷新统计
@@ -286,7 +297,14 @@ const goBack = () => {
 }
 
 onUnmounted(() => {
-  historyChart?.dispose()
+  // 移除事件监听
+  window.removeEventListener('resize', handleResize)
+
+  // 销毁图表实例
+  if (historyChart) {
+    historyChart.dispose()
+    historyChart = null
+  }
 })
 </script>
 

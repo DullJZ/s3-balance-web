@@ -192,6 +192,11 @@ const summary = computed(() => {
 const trendChartRef = ref<HTMLElement>()
 let trendChart: ECharts | null = null
 
+// 窗口调整处理函数（需要保存引用以便移除监听）
+const handleResize = () => {
+  trendChart?.resize()
+}
+
 onMounted(async () => {
   await loadBucketList()
   await loadDefaultData()
@@ -281,10 +286,16 @@ const refreshData = () => {
 const initTrendChart = () => {
   if (!trendChartRef.value) return
 
+  // 先销毁旧实例（如果存在）
+  if (trendChart) {
+    trendChart.dispose()
+    trendChart = null
+  }
+
   trendChart = echarts.init(trendChartRef.value)
   updateTrendChart()
 
-  window.addEventListener('resize', () => trendChart?.resize())
+  window.addEventListener('resize', handleResize)
 }
 
 // 更新趋势图表
@@ -377,7 +388,14 @@ watch(chartType, () => {
 })
 
 onUnmounted(() => {
-  trendChart?.dispose()
+  // 移除事件监听
+  window.removeEventListener('resize', handleResize)
+
+  // 销毁图表实例
+  if (trendChart) {
+    trendChart.dispose()
+    trendChart = null
+  }
 })
 </script>
 

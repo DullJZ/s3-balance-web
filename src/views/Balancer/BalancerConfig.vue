@@ -234,6 +234,11 @@ const loadLoadStats = async () => {
 const initCharts = () => {
   // 请求分布图表
   if (requestChartRef.value) {
+    // 先销毁旧实例（如果存在）
+    if (requestChart) {
+      requestChart.dispose()
+      requestChart = null
+    }
     requestChart = echarts.init(requestChartRef.value)
     requestChart.setOption({
       tooltip: {
@@ -278,6 +283,11 @@ const initCharts = () => {
 
   // 存储容量分布图表
   if (storageChartRef.value) {
+    // 先销毁旧实例（如果存在）
+    if (storageChart) {
+      storageChart.dispose()
+      storageChart = null
+    }
     storageChart = echarts.init(storageChartRef.value)
     storageChart.setOption({
       tooltip: {
@@ -393,9 +403,18 @@ const getStrategyDescription = (strategy: string) => {
 }
 
 onUnmounted(() => {
+  // 移除事件监听
   window.removeEventListener('resize', handleResize)
-  requestChart?.dispose()
-  storageChart?.dispose()
+
+  // 销毁图表实例
+  if (requestChart) {
+    requestChart.dispose()
+    requestChart = null
+  }
+  if (storageChart) {
+    storageChart.dispose()
+    storageChart = null
+  }
 })
 </script>
 
