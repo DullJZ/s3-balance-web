@@ -11,16 +11,19 @@ S3 Balance 管理面板是一个基于 Vue 3 + TypeScript + Element Plus 开发�
 - **负载均衡**：策略配置、负载分布可视化、性能统计
 - **统计监控**：详细统计数据、自定义查询、数据导出、趋势分析
 - **系统配置**：服务参数、数据库、S3 API、监控指标配置
-- **YAML 编辑器**：直接编辑完整配置文件，实时语法验证，格式化支持
+- **前端配置** ⭐️：灵活配置后端服务地址、连接测试、实时生效
+- **YAML 编辑器**：直接编辑完整配置文件、实时语法验证、格式化支持
 
 ### 技术亮点
 
+- **前后端分离** ⭐️：灵活配置后端地址，支持多环境部署
 - **现代化技术栈**：Vue 3 Composition API + TypeScript
 - **高性能构建**：Vite 5.x 开发服务器和构建工具
 - **企业级 UI**：Element Plus 组件库，美观易用
 - **数据可视化**：ECharts 图表库，丰富的图表类型
 - **响应式设计**：适配桌面和移动设备
 - **类型安全**：完整的 TypeScript 类型定义
+- **优雅降级** ⭐️：后端不可用时自动使用 Mock 数据
 
 ## 技术栈
 
@@ -54,17 +57,38 @@ npm install
 yarn install
 ```
 
+### 配置后端地址 ⭐️
+
+s3-balance-web 采用前后端分离架构，需要配置后端 s3-balance 服务的地址。
+
+**方式一：环境变量**（推荐开发环境）
+
+创建 `.env.local` 文件：
+
+```bash
+VITE_API_BASE_URL=http://localhost:8080
+```
+
+**方式二：界面配置**（推荐生产环境）
+
+1. 启动应用
+2. 访问"系统配置 > 前端配置"
+3. 输入后端地址并测试连接
+4. 保存配置
+
+**详细配置说明**：[后端地址配置指南](./docs/backend-configuration.md)
+
 ### 开发模式
 
 ```bash
-# 启动开发服务器（默认端口 3000）
+# 启动开发服务器（默认端口 5173）
 pnpm dev
 
 # 或
 npm run dev
 ```
 
-访问 http://localhost:3000 即可查看管理面板。
+访问 http://localhost:5173 即可查看管理面板。
 
 ### 生产构建
 
@@ -129,39 +153,54 @@ src/
 
 ## 配置说明
 
-### 环境变量
+### 后端地址配置 ⭐️
 
-创建 `.env.local` 文件配置环境变量：
+s3-balance-web 提供三种灵活的后端地址配置方式：
 
-```env
-# API 基础地址（可选，默认为空，使用代理）
-VITE_API_BASE_URL=
+#### 1. 界面配置（推荐）
 
-# 其他自定义环境变量
+**优势**：可视化操作、实时测试、无需重启
+
+**操作步骤**：
+1. 访问"系统配置 > 前端配置"
+2. 输入后端服务地址（如：`http://localhost:8080`）
+3. 点击"测试连接"验证可用性
+4. 点击"保存配置"立即生效
+
+#### 2. 环境变量配置
+
+创建 `.env.local` 文件（开发环境）：
+
+```bash
+# 后端服务地址
+VITE_API_BASE_URL=http://localhost:8080
+
+# 或使用局域网地址
+# VITE_API_BASE_URL=http://192.168.1.100:8080
 ```
 
-### 开发代理配置
+创建 `.env.production` 文件（生产环境）：
 
-项目已在 `vite.config.ts` 中配置了开发服务器代理，自动将以下请求转发到后端服务：
+```bash
+# 生产环境后端地址
+VITE_API_BASE_URL=https://api.example.com
 
-```typescript
-proxy: {
-  '/api': {
-    target: 'http://localhost:8080',  // S3 Balance 后端服务地址
-    changeOrigin: true,
-  },
-  '/metrics': {
-    target: 'http://localhost:8080',
-    changeOrigin: true,
-  },
-  '/health': {
-    target: 'http://localhost:8080',
-    changeOrigin: true,
-  },
-}
+# 或使用相对路径（配合 Nginx 反向代理）
+# VITE_API_BASE_URL=/
 ```
 
-如需修改后端服务地址，请编辑 `vite.config.ts` 中的 `target` 配置。
+#### 3. Nginx 反向代理（生产推荐）
+
+前后端同域部署，避免 CORS 问题。参见下方部署章节的 Nginx 配置。
+
+**配置优先级**（从高到低）：
+1. 界面配置（localStorage）
+2. 环境变量（.env 文件）
+3. 默认值（`http://localhost:8080`）
+
+**详细配置文档**：
+- [后端地址配置指南](./docs/backend-configuration.md) - 完整配置说明
+- [快速开始指南](./docs/quick-start.md) - 快速上手教程
 
 ## 部署
 

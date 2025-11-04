@@ -1,18 +1,20 @@
 /**
  * 后端配置服务
- * 用于管理后端 API 地址等配置信息
+ * 用于管理后端 API 地址、认证令牌等配置信息
  */
 
 export interface BackendConfig {
-  apiBaseUrl: string
-  timeout: number
+  apiBaseUrl: string // 管理API地址（默认8082端口）
+  apiToken: string // API认证令牌
+  timeout: number // 请求超时时间（毫秒）
 }
 
 const CONFIG_STORAGE_KEY = 'backend-config'
 
 // 默认配置
 const DEFAULT_CONFIG: BackendConfig = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082',
+  apiToken: import.meta.env.VITE_API_TOKEN || 'your-secure-api-token-change-this',
   timeout: 10000,
 }
 
@@ -68,6 +70,13 @@ export const configService = {
   },
 
   /**
+   * 获取 API Token
+   */
+  getApiToken(): string {
+    return this.getConfig().apiToken
+  },
+
+  /**
    * 获取超时时间
    */
   getTimeout(): number {
@@ -77,25 +86,36 @@ export const configService = {
   /**
    * 测试后端连接
    */
-  async testConnection(baseUrl?: string): Promise<{ success: boolean; message: string; responseTime?: number }> {
+  async testConnection(baseUrl?: string, token?: string): Promise<{ success: boolean; message: string; responseTime?: number }> {
     const url = baseUrl || this.getApiBaseUrl()
+    const authToken = token || this.getApiToken()
     const startTime = Date.now()
 
     try {
-      // 尝试访问健康检查端点
-      const response = await fetch(`${url}/health`, {
+      // 尝试访问健康检查端点（使用管理API的健康检查接口）
+      const response = await fetch(`${url}/api/health`, {
         method: 'GET',
         mode: 'cors',
+        headers: {
+          'Authorization': `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
         signal: AbortSignal.timeout(5000), // 5秒超时
       })
 
       const responseTime = Date.now() - startTime
 
       if (response.ok) {
+        const data = await response.json()
         return {
           success: true,
-          message: `连接成功！响应时间: ${responseTime}ms`,
+          message: `连接成功！状态: ${data.status}，响应时间: ${responseTime}ms`,
           responseTime,
+        }
+      } else if (response.status === 401) {
+        return {
+          success: false,
+          message: 'API Token 无效，请检查认证令牌配置',
         }
       } else {
         return {

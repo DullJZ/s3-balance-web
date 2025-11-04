@@ -3,6 +3,116 @@
     <h1 class="page-title">系统配置</h1>
 
     <el-tabs v-model="activeTab" type="border-card">
+      <!-- 前端配置 -->
+      <el-tab-pane label="前端配置" name="frontend">
+        <el-alert
+          title="前后端分离配置"
+          type="info"
+          :closable="false"
+          style="margin-bottom: 20px"
+        >
+          <p>在此配置前端连接的后端 s3-balance 服务地址。配置保存在浏览器本地存储中。</p>
+          <p>修改配置后会立即生效，所有 API 请求将使用新的后端地址。</p>
+        </el-alert>
+
+        <el-form :model="backendConfig" label-width="140px">
+          <el-form-item label="后端服务地址">
+            <el-input
+              v-model="backendConfig.apiBaseUrl"
+              placeholder="如: http://localhost:8082"
+            >
+              <template #prepend>
+                <el-icon><Link /></el-icon>
+              </template>
+            </el-input>
+            <div class="form-hint">
+              完整的管理API地址，包含协议和端口（默认8082端口）
+            </div>
+          </el-form-item>
+
+          <el-form-item label="API认证令牌">
+            <el-input
+              v-model="backendConfig.apiToken"
+              type="password"
+              placeholder="输入API Token"
+              show-password
+            >
+              <template #prepend>
+                <el-icon><Key /></el-icon>
+              </template>
+            </el-input>
+            <div class="form-hint">
+              管理API的Bearer Token，需要与后端配置文件中的api.token一致
+            </div>
+          </el-form-item>
+
+          <el-form-item label="请求超时时间">
+            <el-input-number
+              v-model="backendConfig.timeout"
+              :min="1000"
+              :max="60000"
+              :step="1000"
+            />
+            <span style="margin-left: 10px; color: #909399">毫秒</span>
+            <div class="form-hint">
+              API 请求的超时时间，建议设置为 10000-30000 毫秒
+            </div>
+          </el-form-item>
+
+          <el-form-item label="连接状态">
+            <el-tag v-if="connectionStatus.testing" type="info">
+              <el-icon class="is-loading"><Loading /></el-icon>
+              测试中...
+            </el-tag>
+            <el-tag v-else-if="connectionStatus.success" type="success">
+              <el-icon><SuccessFilled /></el-icon>
+              {{ connectionStatus.message }}
+            </el-tag>
+            <el-tag v-else-if="connectionStatus.success === false" type="danger">
+              <el-icon><CircleCloseFilled /></el-icon>
+              {{ connectionStatus.message }}
+            </el-tag>
+            <el-tag v-else type="info">未测试</el-tag>
+          </el-form-item>
+
+          <el-form-item>
+            <el-button
+              type="primary"
+              @click="testConnection"
+              :loading="connectionStatus.testing"
+            >
+              <el-icon><Connection /></el-icon>
+              测试连接
+            </el-button>
+            <el-button type="success" @click="saveBackendConfig" :disabled="connectionStatus.testing">
+              <el-icon><Check /></el-icon>
+              保存配置
+            </el-button>
+            <el-button @click="resetBackendConfig" :disabled="connectionStatus.testing">
+              <el-icon><RefreshLeft /></el-icon>
+              恢复默认
+            </el-button>
+          </el-form-item>
+
+          <el-divider />
+
+          <el-descriptions title="当前配置信息" :column="1" border>
+            <el-descriptions-item label="后端地址">
+              {{ currentBackendUrl }}
+            </el-descriptions-item>
+            <el-descriptions-item label="API Token">
+              {{ maskToken(configService.getApiToken()) }}
+            </el-descriptions-item>
+            <el-descriptions-item label="超时时间">
+              {{ currentBackendTimeout }} 毫秒
+            </el-descriptions-item>
+            <el-descriptions-item label="配置来源">
+              {{ configSource }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-form>
+      </el-tab-pane>
+
       <!-- 服务器配置 -->
       <el-tab-pane label="服务器配置" name="server">
         <el-form :model="config.server" label-width="140px">
@@ -280,12 +390,156 @@ import {
   Refresh,
   WarningFilled,
   SuccessFilled,
+  Link,
+  Connection,
+  Loading,
+  CircleCloseFilled,
+  Key,
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { SystemConfig } from '@/types/config'
 import * as yaml from 'js-yaml'
+import { configService, type BackendConfig } from '@/services/config'
 
-const activeTab = ref('server')
+const activeTab = ref('frontend')
+
+// ========== 前端配置相关 ==========
+// 后端配置
+const backendConfig = ref<BackendConfig>({
+  apiBaseUrl: '',
+  apiToken: '',
+  timeout: 10000,
+})
+
+// 连接测试状态
+const connectionStatus = ref<{
+  testing: boolean
+  success: boolean | null
+  message: string
+}>({
+  testing: false,
+  success: null,
+  message: '',
+})
+
+// 当前后端地址
+const currentBackendUrl = computed(() => {
+  return configService.getApiBaseUrl()
+})
+
+// 当前超时时间
+const currentBackendTimeout = computed(() => {
+  return configService.getTimeout()
+})
+
+// 配置来源
+const configSource = computed(() => {
+  const saved = localStorage.getItem('backend-config')
+  return saved ? '用户自定义' : '环境变量默认值'
+})
+
+// Token脱敏显示
+const maskToken = (token: string) => {
+  if (!token || token.length <= 8) {
+    return '***'
+  }
+  return token.substring(0, 4) + '*'.repeat(token.length - 8) + token.substring(token.length - 4)
+}
+
+// 测试连接
+const testConnection = async () => {
+  connectionStatus.value.testing = true
+  connectionStatus.value.success = null
+  connectionStatus.value.message = ''
+
+  try {
+    const result = await configService.testConnection(
+      backendConfig.value.apiBaseUrl,
+      backendConfig.value.apiToken
+    )
+    connectionStatus.value.success = result.success
+    connectionStatus.value.message = result.message
+
+    if (result.success) {
+      ElMessage.success(result.message)
+    } else {
+      ElMessage.error(result.message)
+    }
+  } catch (error: any) {
+    connectionStatus.value.success = false
+    connectionStatus.value.message = `测试失败: ${error.message}`
+    ElMessage.error('连接测试失败')
+  } finally {
+    connectionStatus.value.testing = false
+  }
+}
+
+// 保存后端配置
+const saveBackendConfig = async () => {
+  try {
+    // 验证 URL 格式
+    const url = backendConfig.value.apiBaseUrl.trim()
+    if (!url) {
+      ElMessage.warning('请输入后端服务地址')
+      return
+    }
+
+    try {
+      new URL(url)
+    } catch {
+      ElMessage.error('后端服务地址格式不正确，请输入完整的 URL（如: http://localhost:8080）')
+      return
+    }
+
+    // 保存配置
+    configService.saveConfig(backendConfig.value)
+    ElMessage.success('配置已保存并生效')
+
+    // 重置连接状态
+    connectionStatus.value = {
+      testing: false,
+      success: null,
+      message: '',
+    }
+  } catch (error: any) {
+    ElMessage.error(`保存失败: ${error.message}`)
+  }
+}
+
+// 重置后端配置
+const resetBackendConfig = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要恢复默认配置吗？这将清除您保存的自定义后端地址。',
+      '确认操作',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+
+    configService.resetConfig()
+    loadBackendConfig()
+    ElMessage.success('已恢复默认配置')
+
+    // 重置连接状态
+    connectionStatus.value = {
+      testing: false,
+      success: null,
+      message: '',
+    }
+  } catch {
+    // 用户取消操作
+  }
+}
+
+// 加载后端配置
+const loadBackendConfig = () => {
+  backendConfig.value = configService.getConfig()
+}
+
+// ========== 原有配置相关 ==========
 
 // YAML 编辑器相关状态
 const yamlContent = ref('')
@@ -340,6 +594,9 @@ const metricsUrl = computed(() => {
 })
 
 onMounted(async () => {
+  // 加载前端配置
+  loadBackendConfig()
+  // 加载系统配置
   await loadConfig()
   // 初始化 YAML 内容
   syncFromConfig()
