@@ -27,21 +27,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
-    proxy: {
-      // 代理 API 请求到后端服务
-      '/api': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-      '/metrics': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-      '/health': {
-        target: 'http://localhost:8080',
-        changeOrigin: true,
-      },
-    },
+    port: 5173,
+    // 注意：不使用 vite 代理，所有请求通过前端配置的后端地址
+    // 这样用户可以自由配置后端地址，而不受限于开发服务器代理
   },
 })

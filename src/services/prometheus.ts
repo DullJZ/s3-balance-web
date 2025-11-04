@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { configService } from './config'
 
 /**
  * Prometheus 指标
@@ -68,9 +69,13 @@ export const prometheusApi = {
    */
   async getMetrics(): Promise<PrometheusMetric[]> {
     try {
-      const response = await axios.get('/metrics', {
+      const metricsUrl = configService.getMetricsBaseUrl()
+      const response = await axios.get(`${metricsUrl}/metrics`, {
         responseType: 'text',
-        timeout: 10000,
+        timeout: configService.getTimeout(),
+        headers: {
+          'Accept': 'text/plain',
+        },
       })
       return parsePrometheusText(response.data)
     } catch (error) {

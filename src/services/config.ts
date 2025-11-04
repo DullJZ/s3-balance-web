@@ -6,6 +6,7 @@
 export interface BackendConfig {
   apiBaseUrl: string // 管理API地址（默认8082端口）
   apiToken: string // API认证令牌
+  metricsBaseUrl?: string // Prometheus指标地址（可选，默认从apiBaseUrl推断）
   timeout: number // 请求超时时间（毫秒）
 }
 
@@ -81,6 +82,37 @@ export const configService = {
    */
   getTimeout(): number {
     return this.getConfig().timeout
+  },
+
+  /**
+   * 获取 Prometheus 指标地址
+   * 如果未配置，从管理API地址推断（去掉端口号或使用默认端口）
+   */
+  getMetricsBaseUrl(): string {
+    const config = this.getConfig()
+
+    // 如果明确配置了 metricsBaseUrl，直接使用
+    if (config.metricsBaseUrl) {
+      return config.metricsBaseUrl
+    }
+
+    // 从 apiBaseUrl 推断
+    // 例如: http://s3.ohmyimage.pp.ua:8082 -> http://s3.ohmyimage.pp.ua
+    // 或者: http://localhost:8082 -> http://localhost:8080
+    try {
+      const url = new URL(config.apiBaseUrl)
+
+      // 如果是 localhost，假设 metrics 在 8080 端口（S3服务）
+      if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+        return `${url.protocol}//${url.hostname}:8080`
+      }
+
+      // 否则，去掉端口号，使用默认 HTTP/HTTPS 端口
+      return `${url.protocol}//${url.hostname}`
+    } catch (error) {
+      console.error('解析 apiBaseUrl 失败:', error)
+      return 'http://localhost:8080'
+    }
   },
 
   /**
