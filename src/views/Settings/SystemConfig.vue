@@ -400,6 +400,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import type { SystemConfig } from '@/types/config'
 import * as yaml from 'js-yaml'
 import { configService, type BackendConfig } from '@/services/config'
+import { systemConfigApi } from '@/services/systemConfig'
 
 const activeTab = ref('frontend')
 
@@ -564,14 +565,7 @@ const config = ref<SystemConfig>({
     log_level: 'warn',
     auto_migrate: true,
   },
-  s3api: {
-    access_key: 'AKIAIOSFODNN7EXAMPLE',
-    secret_key: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-    virtual_host: false,
-    proxy_mode: true,
-    auth_required: true,
-    host: '',
-  },
+  buckets: [],
   balancer: {
     strategy: 'least-space',
     health_check_period: '30s',
@@ -582,6 +576,18 @@ const config = ref<SystemConfig>({
   metrics: {
     enabled: true,
     path: '/metrics',
+  },
+  s3api: {
+    access_key: 'AKIAIOSFODNN7EXAMPLE',
+    secret_key: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    virtual_host: false,
+    proxy_mode: true,
+    auth_required: true,
+    host: '',
+  },
+  api: {
+    enabled: true,
+    token: 'your-secure-api-token-change-this',
   },
 })
 
@@ -612,11 +618,12 @@ watch(activeTab, (newTab) => {
 // 加载配置
 const loadConfig = async () => {
   try {
-    // TODO: 从 API 获取真实配置
+    const loadedConfig = await systemConfigApi.getConfig()
+    config.value = loadedConfig
     ElMessage.success('配置加载成功')
-  } catch (error) {
+  } catch (error: any) {
     console.error('加载配置失败:', error)
-    ElMessage.error('加载配置失败')
+    ElMessage.error(`加载配置失败: ${error.message || '请检查后端连接'}`)
   }
 }
 
@@ -624,7 +631,7 @@ const loadConfig = async () => {
 const saveConfig = async (section: string) => {
   try {
     await ElMessageBox.confirm(
-      '保存配置可能需要重启服务才能生效，确定要保存吗？',
+      '保存配置后会自动触发热更新，大部分配置会立即生效。服务器端口和数据库配置需要重启服务。确定要保存吗？',
       '确认保存',
       {
         confirmButtonText: '确定',
@@ -632,10 +639,27 @@ const saveConfig = async (section: string) => {
         type: 'warning',
       }
     )
-    // TODO: 调用 API 保存配置
-    ElMessage.success('配置已保存')
-  } catch {
-    // 用户取消
+
+    const result = await systemConfigApi.updateConfig(config.value)
+
+    if (result.success) {
+      // 更新本地配置为服务器返回的最新配置
+      config.value = result.config
+      ElMessage.success(result.message || '配置已保存并自动热更新')
+
+      // 同步到YAML编辑器
+      if (activeTab.value === 'yaml') {
+        syncFromConfig()
+      }
+    } else {
+      ElMessage.error(`保存失败: ${result.message}`)
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('保存配置失败:', error)
+      const errorMessage = error.response?.data?.message || error.message || '保存配置失败'
+      ElMessage.error(`保存失败: ${errorMessage}`)
+    }
   }
 }
 
@@ -794,7 +818,7 @@ const saveYamlConfig = async () => {
 
   try {
     await ElMessageBox.confirm(
-      '保存 YAML 配置可能需要重启服务才能生效，确定要保存吗？',
+      '保存配置后会自动触发热更新，大部分配置会立即生效。服务器端口和数据库配置需要重启服务。确定要保存吗？',
       '确认保存',
       {
         confirmButtonText: '确定',
@@ -805,17 +829,22 @@ const saveYamlConfig = async () => {
 
     yamlSaving.value = true
 
-    // TODO: 调用 API 保存配置
-    // await api.saveConfig(config.value)
+    const result = await systemConfigApi.updateConfig(config.value)
 
-    // 模拟保存延迟
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    ElMessage.success('配置已保存')
-  } catch (error) {
+    if (result.success) {
+      // 更新本地配置为服务器返回的最新配置
+      config.value = result.config
+      // 重新同步YAML内容
+      syncFromConfig()
+      ElMessage.success(result.message || '配置已保存并自动热更新')
+    } else {
+      ElMessage.error(`保存失败: ${result.message}`)
+    }
+  } catch (error: any) {
     if (error !== 'cancel') {
       console.error('保存配置失败:', error)
-      ElMessage.error('保存配置失败')
+      const errorMessage = error.response?.data?.message || error.message || '保存配置失败'
+      ElMessage.error(`保存失败: ${errorMessage}`)
     }
   } finally {
     yamlSaving.value = false

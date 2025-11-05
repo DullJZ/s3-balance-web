@@ -54,12 +54,56 @@ export interface S3APIConfig {
 }
 
 /**
- * 系统配置
+ * 操作限制配置
+ */
+export interface OperationLimits {
+  type_a: number // A类操作上限（0表示不限制）
+  type_b: number // B类操作上限（0表示不限制）
+}
+
+/**
+ * 存储桶配置
+ */
+export interface BucketConfigItem {
+  name: string // 存储桶名称
+  endpoint: string // S3端点URL（虚拟桶为空）
+  region: string // 区域
+  access_key_id: string // 访问密钥ID
+  secret_access_key: string // 秘密访问密钥
+  max_size: string // 最大容量（如"10GB"）
+  weight: number // 负载均衡权重
+  enabled: boolean // 是否启用
+  path_style: boolean // 是否使用路径风格
+  virtual: boolean // 是否为虚拟存储桶
+  operation_limits?: OperationLimits // 操作限制
+}
+
+/**
+ * 管理API配置
+ */
+export interface APIConfig {
+  enabled: boolean // 是否启用
+  token: string // 认证令牌
+}
+
+/**
+ * 系统配置（完整）
  */
 export interface SystemConfig {
   server: ServerConfig
   database: DatabaseConfig
+  buckets: BucketConfigItem[]
   balancer: BalancerConfig
   metrics: MetricsConfig
   s3api: S3APIConfig
+  api: APIConfig
+}
+
+/**
+ * 配置更新响应
+ */
+export interface ConfigUpdateResponse {
+  success: boolean
+  message: string
+  config: SystemConfig
 }
