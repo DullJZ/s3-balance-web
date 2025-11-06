@@ -199,10 +199,10 @@ const loadBuckets = async () => {
           endpoint: bucket.endpoint,
           region: bucket.region,
           max_size: bucket.max_size,
-          usage_percent: detail.stats?.usage_percent ?? 0,
+          usage_percent: detail.usage_percent ?? 0, // 直接从顶层获取
           weight: bucket.weight,
           enabled: bucket.enabled,
-          healthy: detail.health?.healthy ?? false,
+          healthy: detail.available ?? false, // 直接从顶层获取
           virtual: bucket.virtual ?? false,
         }
       })

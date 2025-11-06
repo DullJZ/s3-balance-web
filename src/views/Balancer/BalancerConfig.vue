@@ -205,10 +205,10 @@ const loadLoadStats = async () => {
           weight: bucket.weight,
           requestCount,
           requestPercent: 0, // 会在下面计算
-          usedSpace: detail.stats?.used_size || 0,
-          availableSpace: detail.stats?.available_size || 0,
-          avgResponseTime: detail.health?.response_time || 0,
-          healthy: detail.health?.healthy ?? false,
+          usedSpace: detail.used_size || 0, // 直接从顶层获取
+          availableSpace: detail.available_size || 0, // 直接从顶层获取
+          avgResponseTime: 0, // API未提供响应时间
+          healthy: detail.available ?? false, // 直接从顶层获取
         }
       })
     )

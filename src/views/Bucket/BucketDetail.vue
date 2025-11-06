@@ -168,7 +168,7 @@ const loadBucketInfo = async () => {
     bucketInfo.value = {
       name: detail.name,
       virtual: detail.virtual ?? false,
-      healthy: detail.health?.healthy ?? false,
+      healthy: detail.available ?? false, // 直接从顶层获取
       endpoint: detail.endpoint,
       region: detail.region,
       max_size: detail.max_size,
@@ -178,15 +178,13 @@ const loadBucketInfo = async () => {
       operation_limits: detail.operation_limits,
     }
 
-    // 更新统计数据
-    if (detail.stats) {
-      stats.value = {
-        object_count: detail.stats.object_count || 0,
-        total_size: detail.stats.total_size || 0,
-        used_size: detail.stats.used_size || 0,
-        available_size: detail.stats.available_size || 0,
-        usage_percent: detail.stats.usage_percent || 0,
-      }
+    // 更新统计数据（数据在顶层，不是stats子对象）
+    stats.value = {
+      object_count: 0, // API未提供object_count
+      total_size: detail.max_size_bytes || 0,
+      used_size: detail.used_size || 0,
+      available_size: detail.available_size || 0,
+      usage_percent: detail.usage_percent || 0,
     }
   } catch (error) {
     console.error('加载存储桶信息失败:', error)
@@ -200,14 +198,13 @@ const loadStats = async () => {
     // 从 API 获取真实数据
     const detail = await bucketApi.getBucketDetail(bucketName)
 
-    if (detail.stats) {
-      stats.value = {
-        object_count: detail.stats.object_count || 0,
-        total_size: detail.stats.total_size || 0,
-        used_size: detail.stats.used_size || 0,
-        available_size: detail.stats.available_size || 0,
-        usage_percent: detail.stats.usage_percent || 0,
-      }
+    // 更新统计数据（数据在顶层，不是stats子对象）
+    stats.value = {
+      object_count: 0, // API未提供object_count
+      total_size: detail.max_size_bytes || 0,
+      used_size: detail.used_size || 0,
+      available_size: detail.available_size || 0,
+      usage_percent: detail.usage_percent || 0,
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)

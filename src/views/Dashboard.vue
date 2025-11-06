@@ -202,10 +202,9 @@ const loadData = async () => {
     )
 
     for (const detail of bucketDetails) {
-      if (detail.stats) {
-        totalObjects += detail.stats.object_count || 0
-        totalSize += detail.stats.used_size || 0
-      }
+      // 数据在顶层，不是stats子对象
+      totalObjects += 0 // API未提供object_count
+      totalSize += detail.used_size || 0
     }
 
     // 计算总操作数
@@ -223,15 +222,14 @@ const loadData = async () => {
     bucketHealthData.value = await Promise.all(
       buckets.map(async (bucket) => {
         const detail = await bucketApi.getBucketDetail(bucket.name)
-        const health = detail.health
 
         return {
           name: bucket.name,
-          healthy: health?.healthy ?? false,
+          healthy: detail.available ?? false, // 直接从顶层获取
           virtual: bucket.virtual ?? false,
-          usagePercent: detail.stats?.usage_percent ?? 0,
-          responseTime: health?.response_time ?? 0,
-          lastCheck: health?.last_check ? formatDateTime(new Date(health.last_check)) : '未检查',
+          usagePercent: detail.usage_percent ?? 0, // 直接从顶层获取
+          responseTime: 0, // API未提供响应时间
+          lastCheck: detail.last_checked ? formatDateTime(new Date(detail.last_checked)) : '未检查',
         }
       })
     )
@@ -252,7 +250,7 @@ const updateCharts = (buckets: any[], bucketDetails: any[], bucketOperations: Re
   // 更新存储桶使用率图表
   if (bucketUsageChart) {
     const pieData = realBuckets.map((detail) => ({
-      value: Math.round((detail.stats?.used_size || 0) / (1024 * 1024 * 1024)), // 转换为GB
+      value: Math.round((detail.used_size || 0) / (1024 * 1024 * 1024)), // 转换为GB，直接从顶层获取
       name: detail.name,
     }))
 
