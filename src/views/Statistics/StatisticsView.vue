@@ -149,6 +149,7 @@ import type { ECharts } from 'echarts'
 import { formatNumber } from '@/utils/format'
 import { ElMessage } from 'element-plus'
 import statsApi from '@/services/stats'
+import bucketApi from '@/services/bucket'
 
 // 查询表单
 const queryForm = ref({
@@ -206,10 +207,11 @@ onMounted(async () => {
 // 加载存储桶列表
 const loadBucketList = async () => {
   try {
-    // TODO: 从 API 获取存储桶列表
-    bucketList.value = ['user-bucket-1', 'user-bucket-2', 'my-bucket-1', 'my-bucket-2', 'my-bucket-3']
+    const buckets = await bucketApi.getBuckets()
+    bucketList.value = buckets.map((bucket) => bucket.name).sort()
   } catch (error) {
     console.error('加载存储桶列表失败:', error)
+    ElMessage.warning('无法获取存储桶列表，已使用缓存数据')
   }
 }
 
