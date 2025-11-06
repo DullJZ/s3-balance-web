@@ -175,8 +175,8 @@ let refreshTimer: number | null = null
 
 // 初始化数据
 onMounted(async () => {
-  await loadData()
-  initCharts()
+  initCharts() // 先创建图表实例
+  await loadData() // 再加载数据并更新图表
   // 自动刷新（每30秒）
   refreshTimer = setInterval(refreshData, 30000)
 })
@@ -264,10 +264,10 @@ const updateCharts = (buckets: any[], bucketDetails: any[], bucketOperations: Re
 
   // 更新操作统计图表
   if (operationChart) {
-    const bucketNames = buckets.map((b) => b.name)
-    // 这里使用简化的数据，实际应该从 Prometheus 获取更详细的读写统计
-    const readData = bucketNames.map(() => Math.floor(Math.random() * 7000 + 3000))
-    const writeData = bucketNames.map(() => Math.floor(Math.random() * 5000 + 2000))
+    const bucketNames = bucketDetails.map((detail) => detail.name)
+    // 使用真实的操作计数数据
+    const readData = bucketDetails.map((detail) => detail.operation_count_b || 0) // B类操作（读取类）
+    const writeData = bucketDetails.map((detail) => detail.operation_count_a || 0) // A类操作（写入类）
 
     operationChart.setOption({
       xAxis: {
@@ -327,12 +327,7 @@ const initCharts = () => {
               fontWeight: 'bold',
             },
           },
-          data: [
-            { value: 45, name: 'my-bucket-1' },
-            { value: 28, name: 'my-bucket-2' },
-            { value: 32, name: 'my-bucket-3' },
-            { value: 20, name: '剩余空间' },
-          ],
+          data: [], // 空数据，等待loadData加载真实数据
         },
       ],
     })
@@ -363,7 +358,7 @@ const initCharts = () => {
       },
       xAxis: {
         type: 'category',
-        data: ['user-bucket-1', 'user-bucket-2', 'my-bucket-1', 'my-bucket-2'],
+        data: [], // 空数据，等待loadData加载真实数据
       },
       yAxis: {
         type: 'value',
@@ -372,13 +367,13 @@ const initCharts = () => {
         {
           name: '读操作',
           type: 'bar',
-          data: [5200, 3800, 6500, 4200],
+          data: [], // 空数据，等待loadData加载真实数据
           itemStyle: { color: '#409EFF' },
         },
         {
           name: '写操作',
           type: 'bar',
-          data: [3200, 2100, 4800, 2900],
+          data: [], // 空数据，等待loadData加载真实数据
           itemStyle: { color: '#67C23A' },
         },
       ],
