@@ -158,8 +158,8 @@ let storageChart: ECharts | null = null
 
 onMounted(async () => {
   await loadConfig()
-  await loadLoadStats()
-  initCharts()
+  initCharts() // 先创建图表实例
+  await loadLoadStats() // 再加载数据并更新图表
 })
 
 // 加载配置
@@ -271,11 +271,7 @@ const initCharts = () => {
               fontWeight: 'bold',
             },
           },
-          data: [
-            { value: 3200, name: 'my-bucket-1' },
-            { value: 2800, name: 'my-bucket-2' },
-            { value: 4000, name: 'my-bucket-3' },
-          ],
+          data: [], // 空数据，等待loadLoadStats加载真实数据
         },
       ],
     })
@@ -307,7 +303,7 @@ const initCharts = () => {
       },
       xAxis: {
         type: 'category',
-        data: ['my-bucket-1', 'my-bucket-2', 'my-bucket-3'],
+        data: [], // 空数据，等待loadLoadStats加载真实数据
       },
       yAxis: {
         type: 'value',
@@ -320,14 +316,14 @@ const initCharts = () => {
           name: '已用空间',
           type: 'bar',
           stack: 'total',
-          data: [72, 23, 145],
+          data: [], // 空数据，等待loadLoadStats加载真实数据
           itemStyle: { color: '#E6A23C' },
         },
         {
           name: '可用空间',
           type: 'bar',
           stack: 'total',
-          data: [28, 27, 55],
+          data: [], // 空数据，等待loadLoadStats加载真实数据
           itemStyle: { color: '#67C23A' },
         },
       ],
