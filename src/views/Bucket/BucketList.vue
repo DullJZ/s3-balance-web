@@ -199,7 +199,7 @@ const loadBuckets = async () => {
           endpoint: bucket.endpoint,
           region: bucket.region,
           max_size: bucket.max_size,
-          usage_percent: detail.usage_percent ?? 0, // 直接从顶层获取
+          usage_percent: parseFloat((detail.usage_percent ?? 0).toFixed(2)), // 保留两位小数
           weight: bucket.weight,
           enabled: bucket.enabled,
           healthy: detail.available ?? false, // 直接从顶层获取

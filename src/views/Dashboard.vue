@@ -227,7 +227,7 @@ const loadData = async () => {
           name: bucket.name,
           healthy: detail.available ?? false, // 直接从顶层获取
           virtual: bucket.virtual ?? false,
-          usagePercent: detail.usage_percent ?? 0, // 直接从顶层获取
+          usagePercent: parseFloat((detail.usage_percent ?? 0).toFixed(2)), // 保留两位小数
           responseTime: 0, // API未提供响应时间
           lastCheck: detail.last_checked ? formatDateTime(new Date(detail.last_checked)) : '未检查',
         }

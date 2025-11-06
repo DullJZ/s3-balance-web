@@ -67,7 +67,7 @@
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-label">使用率</div>
-            <div class="stat-value">{{ stats.usage_percent.toFixed(1) }}%</div>
+            <div class="stat-value">{{ stats.usage_percent.toFixed(2) }}%</div>
           </div>
         </el-col>
       </el-row>
@@ -184,7 +184,7 @@ const loadBucketInfo = async () => {
       total_size: detail.max_size_bytes || 0,
       used_size: detail.used_size || 0,
       available_size: detail.available_size || 0,
-      usage_percent: detail.usage_percent || 0,
+      usage_percent: parseFloat((detail.usage_percent || 0).toFixed(2)), // 保留两位小数
     }
   } catch (error) {
     console.error('加载存储桶信息失败:', error)
@@ -204,7 +204,7 @@ const loadStats = async () => {
       total_size: detail.max_size_bytes || 0,
       used_size: detail.used_size || 0,
       available_size: detail.available_size || 0,
-      usage_percent: detail.usage_percent || 0,
+      usage_percent: parseFloat((detail.usage_percent || 0).toFixed(2)), // 保留两位小数
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)
