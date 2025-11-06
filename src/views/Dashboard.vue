@@ -246,9 +246,12 @@ const loadData = async () => {
 
 // 更新图表数据
 const updateCharts = (buckets: any[], bucketDetails: any[], bucketOperations: Record<string, number>) => {
+  // 只统计真实存储桶（过滤掉虚拟存储桶）
+  const realBuckets = bucketDetails.filter((detail) => !detail.virtual)
+
   // 更新存储桶使用率图表
   if (bucketUsageChart) {
-    const pieData = bucketDetails.map((detail) => ({
+    const pieData = realBuckets.map((detail) => ({
       value: Math.round((detail.stats?.used_size || 0) / (1024 * 1024 * 1024)), // 转换为GB
       name: detail.name,
     }))
@@ -264,10 +267,10 @@ const updateCharts = (buckets: any[], bucketDetails: any[], bucketOperations: Re
 
   // 更新操作统计图表
   if (operationChart) {
-    const bucketNames = bucketDetails.map((detail) => detail.name)
+    const bucketNames = realBuckets.map((detail) => detail.name)
     // 使用真实的操作计数数据
-    const readData = bucketDetails.map((detail) => detail.operation_count_b || 0) // B类操作（读取类）
-    const writeData = bucketDetails.map((detail) => detail.operation_count_a || 0) // A类操作（写入类）
+    const readData = realBuckets.map((detail) => detail.operation_count_b || 0) // B类操作（读取类）
+    const writeData = realBuckets.map((detail) => detail.operation_count_a || 0) // A类操作（写入类）
 
     operationChart.setOption({
       xAxis: {
