@@ -155,6 +155,94 @@ import { prometheusApi } from '@/services/prometheus'
 
 const router = useRouter()
 
+type AnyRecord = Record<string, unknown> | null | undefined
+
+const normalizeKey = (key: string) => key.replace(/[_\s-]/g, '').toLowerCase()
+const toCamelCase = (key: string) => key.replace(/[-_](\w)/g, (_, c: string) => (c ? c.toUpperCase() : ''))
+const toPascalCase = (key: string) => {
+  const camel = toCamelCase(key)
+  return camel.charAt(0).toUpperCase() + camel.slice(1)
+}
+
+const getFieldValue = (obj: AnyRecord, key: string): unknown => {
+  if (!obj || typeof obj !== 'object') return undefined
+  const variants = [key, toCamelCase(key), toPascalCase(key), key.toUpperCase()].filter(Boolean) as string[]
+
+  for (const variant of variants) {
+    if (Object.prototype.hasOwnProperty.call(obj, variant)) {
+      return (obj as Record<string, unknown>)[variant]
+    }
+  }
+
+  const normalizedTargets = new Set(variants.map(normalizeKey))
+  for (const [prop, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (normalizedTargets.has(normalizeKey(prop))) {
+      return value
+    }
+  }
+
+  return undefined
+}
+
+const getNumberValue = (obj: AnyRecord, keys: string[], fallback?: number): number | undefined => {
+  for (const key of keys) {
+    const value = getFieldValue(obj, key)
+    if (value !== undefined && value !== null && value !== '') {
+      const num = typeof value === 'number' ? value : Number(value)
+      if (Number.isFinite(num)) {
+        return num
+      }
+    }
+  }
+  return fallback
+}
+
+const getBooleanValue = (obj: AnyRecord, keys: string[], fallback?: boolean): boolean | undefined => {
+  for (const key of keys) {
+    const value = getFieldValue(obj, key)
+    if (value !== undefined && value !== null) {
+      if (typeof value === 'boolean') return value
+      if (typeof value === 'number') return value !== 0
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase()
+        if (normalized === 'true') return true
+        if (normalized === 'false') return false
+      }
+    }
+  }
+  return fallback
+}
+
+const getStringValue = (obj: AnyRecord, keys: string[], fallback?: string): string | undefined => {
+  for (const key of keys) {
+    const value = getFieldValue(obj, key)
+    if (value !== undefined && value !== null) {
+      return String(value)
+    }
+  }
+  return fallback
+}
+
+const getStatNumber = (detail: AnyRecord, keys: string[], fallback = 0): number => {
+  const direct = getNumberValue(detail, keys)
+  if (direct !== undefined) return direct
+
+  const stats = getFieldValue(detail, 'stats')
+  if (stats && typeof stats === 'object') {
+    const nested = getNumberValue(stats as AnyRecord, keys)
+    if (nested !== undefined) return nested
+  }
+
+  return fallback
+}
+
+const formatLastCheck = (value?: string) => {
+  if (!value) return '未检查'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return '未检查'
+  return formatDateTime(date)
+}
+
 // 统计数据
 const stats = ref({
   totalBuckets: 0,
@@ -185,30 +273,32 @@ onMounted(async () => {
 const loadData = async () => {
   try {
     // 并行获取所有数据
-    const [buckets, systemHealth, bucketOperations] = await Promise.all([
+    const [buckets, _systemHealth, bucketOperations] = await Promise.all([
       bucketApi.getBuckets(),
       healthApi.getSystemHealth(),
       prometheusApi.getBucketOperations(),
     ])
 
-    // 计算统计数据
-    let totalObjects = 0
-    let totalSize = 0
-    let totalOperations = 0
-
-    // 从桶详情计算总对象数和总大小
     const bucketDetails = await Promise.all(
       buckets.map((bucket) => bucketApi.getBucketDetail(bucket.name))
     )
 
-    for (const detail of bucketDetails) {
-      // 数据在顶层，不是stats子对象
-      totalObjects += 0 // API未提供object_count
-      totalSize += detail.used_size || 0
-    }
-
-    // 计算总操作数
-    totalOperations = Object.values(bucketOperations).reduce((sum, count) => sum + count, 0)
+    const totalObjects = bucketDetails.reduce(
+      (sum, detail) => sum + getStatNumber(detail, ['object_count', 'total_objects', 'objects']),
+      0
+    )
+    const totalSize = bucketDetails.reduce((sum, detail) => sum + getStatNumber(detail, ['used_size']), 0)
+    const totalOperationA = bucketDetails.reduce(
+      (sum, detail) => sum + (getNumberValue(detail, ['operation_count_a', 'write_operations']) ?? 0),
+      0
+    )
+    const totalOperationB = bucketDetails.reduce(
+      (sum, detail) => sum + (getNumberValue(detail, ['operation_count_b', 'read_operations']) ?? 0),
+      0
+    )
+    const detailOperationsTotal = totalOperationA + totalOperationB
+    const metricOperationsTotal = Object.values(bucketOperations).reduce((sum, count) => sum + count, 0)
+    const totalOperations = metricOperationsTotal > 0 ? metricOperationsTotal : detailOperationsTotal
 
     // 更新统计数据
     stats.value = {
@@ -219,23 +309,24 @@ const loadData = async () => {
     }
 
     // 构建健康状态表格数据
-    bucketHealthData.value = await Promise.all(
-      buckets.map(async (bucket) => {
-        const detail = await bucketApi.getBucketDetail(bucket.name)
+    bucketHealthData.value = bucketDetails.map((detail) => {
+      const healthInfo = getFieldValue(detail, 'health') as AnyRecord
+      const usagePercent = getStatNumber(detail, ['usage_percent'])
+      const lastCheckRaw =
+        getStringValue(healthInfo, ['last_check']) ?? getStringValue(detail, ['last_checked', 'last_check'])
 
-        return {
-          name: bucket.name,
-          healthy: detail.available ?? false, // 直接从顶层获取
-          virtual: bucket.virtual ?? false,
-          usagePercent: parseFloat((detail.usage_percent ?? 0).toFixed(2)), // 保留两位小数
-          responseTime: 0, // API未提供响应时间
-          lastCheck: detail.last_checked ? formatDateTime(new Date(detail.last_checked)) : '未检查',
-        }
-      })
-    )
+      return {
+        name: detail.name,
+        healthy: getBooleanValue(healthInfo ?? detail, ['healthy', 'available'], detail.available ?? true) ?? true,
+        virtual: getBooleanValue(detail, ['virtual'], detail.virtual ?? false) ?? false,
+        usagePercent: parseFloat(usagePercent.toFixed(2)),
+        responseTime: getNumberValue(healthInfo, ['response_time']) ?? 0,
+        lastCheck: formatLastCheck(lastCheckRaw),
+      }
+    })
 
     // 更新图表数据
-    updateCharts(buckets, bucketDetails, bucketOperations)
+    updateCharts(bucketDetails)
   } catch (error) {
     console.error('加载数据失败:', error)
     ElMessage.error('加载数据失败，显示模拟数据')
@@ -243,14 +334,16 @@ const loadData = async () => {
 }
 
 // 更新图表数据
-const updateCharts = (buckets: any[], bucketDetails: any[], bucketOperations: Record<string, number>) => {
+const updateCharts = (bucketDetails: any[]) => {
   // 只统计真实存储桶（过滤掉虚拟存储桶）
-  const realBuckets = bucketDetails.filter((detail) => !detail.virtual)
+  const realBuckets = bucketDetails.filter(
+    (detail) => !getBooleanValue(detail, ['virtual'], detail.virtual ?? false)
+  )
 
   // 更新存储桶使用率图表
   if (bucketUsageChart) {
     const pieData = realBuckets.map((detail) => ({
-      value: Math.round((detail.used_size || 0) / (1024 * 1024 * 1024)), // 转换为GB，直接从顶层获取
+      value: Math.round(getStatNumber(detail, ['used_size']) / (1024 * 1024 * 1024)), // 转换为GB
       name: detail.name,
     }))
 
@@ -267,8 +360,12 @@ const updateCharts = (buckets: any[], bucketDetails: any[], bucketOperations: Re
   if (operationChart) {
     const bucketNames = realBuckets.map((detail) => detail.name)
     // 使用真实的操作计数数据
-    const readData = realBuckets.map((detail) => detail.operation_count_b || 0) // B类操作（读取类）
-    const writeData = realBuckets.map((detail) => detail.operation_count_a || 0) // A类操作（写入类）
+    const readData = realBuckets.map(
+      (detail) => getNumberValue(detail, ['operation_count_b', 'read_operations']) ?? 0
+    ) // B类操作（读取类）
+    const writeData = realBuckets.map(
+      (detail) => getNumberValue(detail, ['operation_count_a', 'write_operations']) ?? 0
+    ) // A类操作（写入类）
 
     operationChart.setOption({
       xAxis: {
