@@ -12,11 +12,43 @@ export interface BackendConfig {
 
 const CONFIG_STORAGE_KEY = 'backend-config'
 
-// 默认配置
-const DEFAULT_CONFIG: BackendConfig = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8082',
-  apiToken: import.meta.env.VITE_API_TOKEN || 'your-secure-api-token-change-this',
-  timeout: 10000,
+/**
+ * 获取默认的API基础URL
+ * 优先级：环境变量 > 当前访问域名:8082 > localhost:8082
+ */
+function getDefaultApiBaseUrl(): string {
+  // 如果有环境变量配置，使用环境变量
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+
+  // 否则使用当前访问域名
+  try {
+    const protocol = window.location.protocol // http: 或 https:
+    const hostname = window.location.hostname // 域名或IP
+
+    // 如果是开发服务器端口（5173, 3000等），使用localhost:8082
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:8082`
+    }
+
+    // 生产环境，使用当前域名的8082端口
+    return `${protocol}//${hostname}:8082`
+  } catch (error) {
+    // 降级方案
+    return 'http://localhost:8082'
+  }
+}
+
+/**
+ * 获取默认配置
+ */
+function getDefaultConfig(): BackendConfig {
+  return {
+    apiBaseUrl: getDefaultApiBaseUrl(),
+    apiToken: import.meta.env.VITE_API_TOKEN || 'your-secure-api-token-change-this',
+    timeout: 10000,
+  }
 }
 
 /**
@@ -30,12 +62,12 @@ export const configService = {
     try {
       const saved = localStorage.getItem(CONFIG_STORAGE_KEY)
       if (saved) {
-        return { ...DEFAULT_CONFIG, ...JSON.parse(saved) }
+        return { ...getDefaultConfig(), ...JSON.parse(saved) }
       }
     } catch (error) {
       console.error('读取配置失败:', error)
     }
-    return { ...DEFAULT_CONFIG }
+    return { ...getDefaultConfig() }
   },
 
   /**
@@ -60,7 +92,7 @@ export const configService = {
    */
   resetConfig(): void {
     localStorage.removeItem(CONFIG_STORAGE_KEY)
-    window.dispatchEvent(new CustomEvent('backend-config-changed', { detail: DEFAULT_CONFIG }))
+    window.dispatchEvent(new CustomEvent('backend-config-changed', { detail: getDefaultConfig() }))
   },
 
   /**
