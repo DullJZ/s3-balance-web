@@ -308,13 +308,9 @@
             </div>
           </div>
 
-          <el-input
+          <YamlEditor
             v-model="yamlContent"
-            type="textarea"
-            :rows="25"
-            placeholder="在此输入或编辑 YAML 配置..."
-            class="yaml-editor"
-            @input="onYamlInput"
+            @update:modelValue="onYamlInput"
           />
 
           <div v-if="yamlError" class="yaml-error">
@@ -401,6 +397,7 @@ import type { SystemConfig } from '@/types/config'
 import * as yaml from 'js-yaml'
 import { configService, type BackendConfig } from '@/services/config'
 import { systemConfigApi } from '@/services/systemConfig'
+import YamlEditor from '@/components/YamlEditor.vue'
 
 const activeTab = ref('frontend')
 
@@ -890,14 +887,6 @@ const saveYamlConfig = async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.yaml-editor :deep(textarea) {
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  resize: vertical;
-  min-height: 600px;
 }
 
 .yaml-error {
