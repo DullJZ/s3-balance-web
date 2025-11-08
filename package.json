@@ -10,7 +10,10 @@
     "lint": "eslint . --ext .vue,.ts,.tsx --fix"
   },
   "dependencies": {
+    "@codemirror/lang-yaml": "^6.1.2",
+    "@codemirror/theme-one-dark": "^6.1.3",
     "axios": "^1.6.2",
+    "codemirror": "^6.0.2",
     "echarts": "^5.4.3",
     "element-plus": "^2.4.3",
     "js-yaml": "^4.1.0",
