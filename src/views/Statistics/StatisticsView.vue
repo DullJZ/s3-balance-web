@@ -160,7 +160,7 @@ const queryForm = ref({
   endMonth: 0,
 })
 
-const dateRange = ref<[string, string]>([])
+const dateRange = ref<[string, string]>(['', ''])
 
 // 存储桶列表
 const bucketList = ref<string[]>([])
@@ -269,7 +269,7 @@ const resetQuery = () => {
     endYear: 0,
     endMonth: 0,
   }
-  dateRange.value = []
+  dateRange.value = ['', '']
   loadDefaultData()
 }
 

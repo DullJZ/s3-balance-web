@@ -155,8 +155,6 @@ import { prometheusApi } from '@/services/prometheus'
 
 const router = useRouter()
 
-type AnyRecord = Record<string, unknown> | null | undefined
-
 const normalizeKey = (key: string) => key.replace(/[_\s-]/g, '').toLowerCase()
 const toCamelCase = (key: string) => key.replace(/[-_](\w)/g, (_, c: string) => (c ? c.toUpperCase() : ''))
 const toPascalCase = (key: string) => {
@@ -164,7 +162,7 @@ const toPascalCase = (key: string) => {
   return camel.charAt(0).toUpperCase() + camel.slice(1)
 }
 
-const getFieldValue = (obj: AnyRecord, key: string): unknown => {
+const getFieldValue = (obj: any, key: string): unknown => {
   if (!obj || typeof obj !== 'object') return undefined
   const variants = [key, toCamelCase(key), toPascalCase(key), key.toUpperCase()].filter(Boolean) as string[]
 
@@ -184,7 +182,7 @@ const getFieldValue = (obj: AnyRecord, key: string): unknown => {
   return undefined
 }
 
-const getNumberValue = (obj: AnyRecord, keys: string[], fallback?: number): number | undefined => {
+const getNumberValue = (obj: any, keys: string[], fallback?: number): number | undefined => {
   for (const key of keys) {
     const value = getFieldValue(obj, key)
     if (value !== undefined && value !== null && value !== '') {
@@ -197,7 +195,7 @@ const getNumberValue = (obj: AnyRecord, keys: string[], fallback?: number): numb
   return fallback
 }
 
-const getBooleanValue = (obj: AnyRecord, keys: string[], fallback?: boolean): boolean | undefined => {
+const getBooleanValue = (obj: any, keys: string[], fallback?: boolean): boolean | undefined => {
   for (const key of keys) {
     const value = getFieldValue(obj, key)
     if (value !== undefined && value !== null) {
@@ -213,7 +211,7 @@ const getBooleanValue = (obj: AnyRecord, keys: string[], fallback?: boolean): bo
   return fallback
 }
 
-const getStringValue = (obj: AnyRecord, keys: string[], fallback?: string): string | undefined => {
+const getStringValue = (obj: any, keys: string[], fallback?: string): string | undefined => {
   for (const key of keys) {
     const value = getFieldValue(obj, key)
     if (value !== undefined && value !== null) {
@@ -223,13 +221,13 @@ const getStringValue = (obj: AnyRecord, keys: string[], fallback?: string): stri
   return fallback
 }
 
-const getStatNumber = (detail: AnyRecord, keys: string[], fallback = 0): number => {
+const getStatNumber = (detail: any, keys: string[], fallback = 0): number => {
   const direct = getNumberValue(detail, keys)
   if (direct !== undefined) return direct
 
   const stats = getFieldValue(detail, 'stats')
   if (stats && typeof stats === 'object') {
-    const nested = getNumberValue(stats as AnyRecord, keys)
+    const nested = getNumberValue(stats as any, keys)
     if (nested !== undefined) return nested
   }
 
@@ -259,7 +257,7 @@ const bucketUsageChartRef = ref<HTMLElement>()
 const operationChartRef = ref<HTMLElement>()
 let bucketUsageChart: ECharts | null = null
 let operationChart: ECharts | null = null
-let refreshTimer: number | null = null
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 // 初始化数据
 onMounted(async () => {
@@ -310,7 +308,7 @@ const loadData = async () => {
 
     // 构建健康状态表格数据
     bucketHealthData.value = bucketDetails.map((detail) => {
-      const healthInfo = getFieldValue(detail, 'health') as AnyRecord
+      const healthInfo = getFieldValue(detail, 'health') as any
       const usagePercent = getStatNumber(detail, ['usage_percent'])
       const lastCheckRaw =
         getStringValue(healthInfo, ['last_check']) ?? getStringValue(detail, ['last_checked', 'last_check'])

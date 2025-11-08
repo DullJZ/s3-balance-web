@@ -625,7 +625,7 @@ const loadConfig = async () => {
 }
 
 // 保存配置
-const saveConfig = async (section: string) => {
+const saveConfig = async (_section: string) => {
   try {
     await ElMessageBox.confirm(
       '保存配置后会自动触发热更新，大部分配置会立即生效。服务器端口和数据库配置需要重启服务。确定要保存吗？',

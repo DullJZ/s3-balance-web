@@ -51,9 +51,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { Expand, Fold, Refresh, FullScreen, Avatar } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+
+// 防止 TypeScript 报错未使用，但实际在模板中通过字符串使用
+// @ts-ignore
+const _icons = { Expand, Fold }
 
 interface Props {
   isCollapse: boolean

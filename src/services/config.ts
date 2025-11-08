@@ -26,7 +26,6 @@ function getDefaultApiBaseUrl(): string {
   try {
     const protocol = window.location.protocol // http: 或 https:
     const hostname = window.location.hostname // 域名或IP
-    const port = window.location.port // 端口号
 
     // 开发环境：localhost 访问，使用 8082 端口
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
