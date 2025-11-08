@@ -14,7 +14,7 @@ const CONFIG_STORAGE_KEY = 'backend-config'
 
 /**
  * 获取默认的API基础URL
- * 优先级：环境变量 > 当前访问域名:8082 > localhost:8082
+ * 优先级：环境变量 > 当前访问域名 > localhost:8082
  */
 function getDefaultApiBaseUrl(): string {
   // 如果有环境变量配置，使用环境变量
@@ -26,14 +26,15 @@ function getDefaultApiBaseUrl(): string {
   try {
     const protocol = window.location.protocol // http: 或 https:
     const hostname = window.location.hostname // 域名或IP
+    const port = window.location.port // 端口号
 
-    // 如果是开发服务器端口（5173, 3000等），使用localhost:8082
+    // 开发环境：localhost 访问，使用 8082 端口
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       return `${protocol}//${hostname}:8082`
     }
 
-    // 生产环境，使用当前域名的8082端口
-    return `${protocol}//${hostname}:8082`
+    // 生产环境：使用当前域名，不包含端口（通过反向代理）
+    return `${protocol}//${hostname}`
   } catch (error) {
     // 降级方案
     return 'http://localhost:8082'
