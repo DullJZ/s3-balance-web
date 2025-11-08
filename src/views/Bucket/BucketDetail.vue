@@ -101,6 +101,18 @@
           <el-button text @click="refreshHistory">刷新</el-button>
         </div>
       </template>
+      <el-alert
+        title="暂无历史数据"
+        type="info"
+        :closable="false"
+        style="margin-bottom: 16px"
+      >
+        <template #default>
+          <p style="margin: 0">
+            历史操作数据图表需要后端提供历史统计API支持。当前仅显示实时操作计数。
+          </p>
+        </template>
+      </el-alert>
       <div ref="historyChartRef" style="height: 400px"></div>
     </el-card>
   </div>
@@ -227,7 +239,7 @@ const initHistoryChart = () => {
       trigger: 'axis',
     },
     legend: {
-      data: ['操作 A', '操作 B'],
+      data: ['写操作 (A类)', '读操作 (B类)'],
     },
     grid: {
       left: '3%',
@@ -238,23 +250,23 @@ const initHistoryChart = () => {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+      data: [], // 空数据，等待后端提供历史数据API
     },
     yAxis: {
       type: 'value',
     },
     series: [
       {
-        name: '操作 A',
+        name: '写操作 (A类)',
         type: 'line',
-        data: [1200, 1320, 1010, 1340, 900, 1230, 1100, 1320, 980, 1350, 1200, 1400],
+        data: [], // 空数据，等待后端提供历史数据API
         smooth: true,
         itemStyle: { color: '#409EFF' },
       },
       {
-        name: '操作 B',
+        name: '读操作 (B类)',
         type: 'line',
-        data: [800, 900, 760, 980, 650, 890, 780, 920, 710, 950, 860, 1000],
+        data: [], // 空数据，等待后端提供历史数据API
         smooth: true,
         itemStyle: { color: '#67C23A' },
       },
