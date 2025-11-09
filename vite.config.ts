@@ -7,6 +7,8 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  // 使用相对路径，支持部署在任意子路径（如 /web/、/admin/ 等）
+  base: './',
   plugins: [
     vue(),
     // 自动导入 Vue API
