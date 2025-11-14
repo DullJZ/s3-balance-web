@@ -6,9 +6,11 @@ import Components from 'unplugin-vue-components/vite'
 import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  // 使用相对路径，支持部署在任意子路径（如 /web/、/admin/ 等）
-  base: './',
+export default defineConfig(({ mode }) => ({
+  // 应用部署路径配置
+  // 生产环境：从环境变量 VITE_BASE_PATH 读取（默认 /web/）
+  // 开发环境：使用根路径 /
+  base: mode === 'production' ? (process.env.VITE_BASE_PATH || '/web/') : '/',
   plugins: [
     vue(),
     // 自动导入 Vue API
@@ -33,4 +35,4 @@ export default defineConfig({
     // 注意：不使用 vite 代理，所有请求通过前端配置的后端地址
     // 这样用户可以自由配置后端地址，而不受限于开发服务器代理
   },
-})
+}))
