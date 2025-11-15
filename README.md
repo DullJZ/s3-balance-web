@@ -42,49 +42,60 @@ S3 Balance 管理面板是一个基于 Vue 3 + TypeScript + Element Plus 开发�
 ### 环境要求
 
 - Node.js >= 18.0.0
-- pnpm >= 8.0.0（推荐）或 npm / yarn
+- npm >= 8.0.0
 
 ### 安装依赖
 
 ```bash
-# 使用 pnpm（推荐）
-pnpm install
-
-# 或使用 npm
 npm install
-
-# 或使用 yarn
-yarn install
 ```
 
 ### 配置后端地址 ⭐️
-
-s3-balance-web 采用前后端分离架构，需要配置后端 s3-balance 服务的地址。
 
 **方式一：环境变量**（推荐开发环境）
 
 创建 `.env.local` 文件：
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8080
+# 管理 API 地址
+VITE_API_BASE_URL=http://localhost:8082
 ```
 
 **方式二：界面配置**（推荐生产环境）
 
 1. 启动应用
-2. 访问"系统配置 > 前端配置"
-3. 输入后端地址并测试连接
-4. 保存配置
+2. 访问"系统配置"页面
+3. 在前端配置部分输入后端地址并测试连接
+4. 保存配置（配置保存在浏览器 localStorage）
 
-**详细配置说明**：[后端地址配置指南](./docs/backend-configuration.md)
+
+### 配置部署路径 ⭐️
+
+如果应用部署在子路径（如 `example.com/web/`），需要配置部署路径。
+
+**方式一：修改 `.env.production`**
+
+```bash
+# 默认已配置为 /web/
+VITE_BASE_PATH=/web/
+```
+
+**方式二：构建时指定**
+
+```bash
+# 部署在根路径
+VITE_BASE_PATH=/ npm run build
+
+# 部署在自定义子路径
+VITE_BASE_PATH=/admin/ npm run build
+```
+
+**详细说明**：参考 [部署文档](./DEPLOY.md)
 
 ### 开发模式
 
 ```bash
 # 启动开发服务器（默认端口 5173）
-pnpm dev
-
-# 或
 npm run dev
 ```
 
@@ -94,13 +105,14 @@ npm run dev
 
 ```bash
 # 构建生产版本
-pnpm build
+npm run build
 
 # 预览生产构建
-pnpm preview
+npm run preview
 ```
 
 构建产物将输出到 `dist` 目录。
+
 
 ## 项目结构
 
@@ -187,95 +199,6 @@ VITE_API_BASE_URL=https://api.example.com
 
 # 或使用相对路径（配合 Nginx 反向代理）
 # VITE_API_BASE_URL=/
-```
-
-#### 3. Nginx 反向代理（生产推荐）
-
-前后端同域部署，避免 CORS 问题。参见下方部署章节的 Nginx 配置。
-
-**配置优先级**（从高到低）：
-1. 界面配置（localStorage）
-2. 环境变量（.env 文件）
-3. 默认值（`http://localhost:8080`）
-
-**详细配置文档**：
-- [后端地址配置指南](./docs/backend-configuration.md) - 完整配置说明
-- [快速开始指南](./docs/quick-start.md) - 快速上手教程
-
-## 部署
-
-### Nginx 部署
-
-1. 构建生产版本：
-
-```bash
-pnpm build
-```
-
-2. 将 `dist` 目录上传到服务器
-
-3. 配置 Nginx：
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    root /path/to/dist;
-    index index.html;
-
-    # 前端路由支持
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # API 代理
-    location /api {
-        proxy_pass http://localhost:8080;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-
-    location /metrics {
-        proxy_pass http://localhost:8080;
-    }
-
-    location /health {
-        proxy_pass http://localhost:8080;
-    }
-}
-```
-
-4. 重启 Nginx：
-
-```bash
-sudo nginx -s reload
-```
-
-### Docker 部署
-
-创建 `Dockerfile`：
-
-```dockerfile
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install
-COPY . .
-RUN pnpm build
-
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-构建和运行：
-
-```bash
-docker build -t s3-balance-web .
-docker run -d -p 80:80 --name s3-balance-web s3-balance-web
 ```
 
 ## 开发指南
