@@ -53,8 +53,8 @@ jobs:
         run: |
           cd dist
           tar -czf ../dist.tar.gz .
+          zip -r ../dist.zip .
           cd ..
-          zip -r dist.zip dist/
 
       - name: 创建 Release
         id: create_release
