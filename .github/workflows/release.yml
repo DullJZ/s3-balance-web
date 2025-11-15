@@ -28,10 +28,11 @@ jobs:
           npm --version
           cat package.json | grep '"version"'
 
+      - name: 删除 package-lock.json
+        run: rm -f package-lock.json
+
       - name: 安装依赖
-        run: |
-          npm cache clean --force
-          npm install --legacy-peer-deps
+        run: npm install --no-package-lock
 
       - name: 构建前端
         run: npm run build
