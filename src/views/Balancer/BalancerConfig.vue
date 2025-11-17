@@ -134,12 +134,17 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
 import { formatBytes, formatNumber } from '@/utils/format'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { bucketApi } from '@/services/bucket'
 import { prometheusApi } from '@/services/prometheus'
+import { systemConfigApi } from '@/services/systemConfig'
+import type { SystemConfig, BalancerConfig } from '@/types/config'
 
-// 配置数据
-const config = ref({
+// 完整系统配置（用于保存时提交）
+const systemConfig = ref<SystemConfig | null>(null)
+
+// 负载均衡配置（用于表单绑定）
+const config = ref<BalancerConfig>({
   strategy: 'least-space',
   health_check_period: '30s',
   update_stats_period: '60s',
@@ -165,22 +170,24 @@ onMounted(async () => {
 // 加载配置
 const loadConfig = async () => {
   try {
-    // TODO: 后续从 API 获取真实配置
-    // 暂时从 localStorage 读取配置，如果没有则使用默认值
-    const savedConfig = localStorage.getItem('balancer-config')
-    if (savedConfig) {
-      config.value = JSON.parse(savedConfig)
-    } else {
-      config.value = {
-        strategy: 'least-space',
-        health_check_period: '30s',
-        update_stats_period: '60s',
-        retry_attempts: 3,
-        retry_delay: '1s',
-      }
-    }
-  } catch (error) {
+    // 从后端 API 获取完整系统配置
+    const loadedConfig = await systemConfigApi.getConfig()
+    systemConfig.value = loadedConfig
+
+    // 提取负载均衡配置到表单
+    config.value = { ...loadedConfig.balancer }
+  } catch (error: any) {
     console.error('加载配置失败:', error)
+    ElMessage.error(`加载配置失败: ${error.message || '请检查后端连接'}`)
+
+    // 加载失败时使用默认值
+    config.value = {
+      strategy: 'least-space',
+      health_check_period: '30s',
+      update_stats_period: '60s',
+      retry_attempts: 3,
+      retry_delay: '1s',
+    }
   }
 }
 
@@ -377,13 +384,50 @@ const updateCharts = (data: any[]) => {
 // 保存配置
 const saveConfig = async () => {
   try {
-    // TODO: 后续调用 API 保存配置
-    // 暂时保存到 localStorage
-    localStorage.setItem('balancer-config', JSON.stringify(config.value))
-    ElMessage.success('配置已保存')
-  } catch (error) {
+    // 检查是否已加载完整配置
+    if (!systemConfig.value) {
+      ElMessage.warning('系统配置未加载，请刷新页面后重试')
+      return
+    }
+
+    // 确认保存操作
+    await ElMessageBox.confirm(
+      '保存配置后会自动触发热更新，负载均衡策略会立即生效。确定要保存吗？',
+      '确认保存',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }
+    )
+
+    // 更新完整配置中的 balancer 部分
+    const updatedConfig: SystemConfig = {
+      ...systemConfig.value,
+      balancer: { ...config.value },
+    }
+
+    // 调用 API 保存配置
+    const result = await systemConfigApi.updateConfig(updatedConfig)
+
+    if (result.success) {
+      // 更新本地缓存
+      systemConfig.value = result.config
+      config.value = { ...result.config.balancer }
+
+      ElMessage.success(result.message || '配置已保存并自动热更新')
+    } else {
+      ElMessage.error(`保存失败: ${result.message}`)
+    }
+  } catch (error: any) {
+    // 用户取消操作
+    if (error === 'cancel') {
+      return
+    }
+
     console.error('保存配置失败:', error)
-    ElMessage.error('保存配置失败')
+    const errorMessage = error.response?.data?.message || error.message || '保存配置失败'
+    ElMessage.error(`保存失败: ${errorMessage}`)
   }
 }
 
