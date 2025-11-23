@@ -12,13 +12,15 @@
       </template>
       <el-form :model="config" label-width="140px">
         <el-form-item label="负载策略">
-          <el-radio-group v-model="config.strategy">
-            <el-radio label="round-robin">轮询（Round Robin）</el-radio>
-            <el-radio label="least-space">最少剩余空间（Least Space）</el-radio>
-            <el-radio label="weighted">加权随机（Weighted）</el-radio>
-          </el-radio-group>
-          <div class="strategy-desc">
-            {{ getStrategyDescription(config.strategy) }}
+          <div class="strategy-wrapper">
+            <el-radio-group v-model="config.strategy">
+              <el-radio label="round-robin">轮询（Round Robin）</el-radio>
+              <el-radio label="least-space">最少剩余空间（Least Space）</el-radio>
+              <el-radio label="weighted">加权随机（Weighted）</el-radio>
+            </el-radio-group>
+            <div class="strategy-desc">
+              {{ getStrategyDescription(config.strategy) }}
+            </div>
           </div>
         </el-form-item>
 
@@ -471,6 +473,12 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.strategy-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .strategy-desc {
