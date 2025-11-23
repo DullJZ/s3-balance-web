@@ -5,22 +5,22 @@
     <!-- 工具栏 -->
     <el-card shadow="never" style="margin-bottom: 20px">
       <el-row :gutter="20">
-        <el-col :span="8">
-          <el-input v-model="searchText" placeholder="搜索存储桶名称" clearable>
+        <el-col :xs="24" :sm="24" :md="8">
+          <el-input v-model="searchText" placeholder="搜索存储桶名称" clearable class="filter-item">
             <template #prefix>
               <el-icon><Search /></el-icon>
             </template>
           </el-input>
         </el-col>
-        <el-col :span="8">
-          <el-select v-model="filterType" placeholder="存储桶类型" clearable style="width: 100%">
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-select v-model="filterType" placeholder="存储桶类型" clearable style="width: 100%" class="filter-item">
             <el-option label="全部" value="" />
             <el-option label="虚拟桶" value="virtual" />
             <el-option label="真实桶" value="real" />
           </el-select>
         </el-col>
-        <el-col :span="8">
-          <el-select v-model="filterStatus" placeholder="健康状态" clearable style="width: 100%">
+        <el-col :xs="24" :sm="12" :md="8">
+          <el-select v-model="filterStatus" placeholder="健康状态" clearable style="width: 100%" class="filter-item">
             <el-option label="全部" value="" />
             <el-option label="健康" value="healthy" />
             <el-option label="异常" value="unhealthy" />
@@ -37,7 +37,8 @@
           <el-tag type="primary">{{ virtualBuckets.length }} 个</el-tag>
         </div>
       </template>
-      <el-table :data="filteredVirtualBuckets" style="width: 100%">
+      <div class="table-container">
+        <el-table :data="filteredVirtualBuckets" style="width: 100%">
         <el-table-column prop="name" label="存储桶名称" min-width="150">
           <template #default="{ row }">
             <el-link type="primary" @click="viewDetail(row.name)">
@@ -77,6 +78,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
 
     <!-- 真实桶列表 -->
@@ -87,7 +89,8 @@
           <el-tag type="info">{{ realBuckets.length }} 个</el-tag>
         </div>
       </template>
-      <el-table :data="filteredRealBuckets" style="width: 100%">
+      <div class="table-container">
+        <el-table :data="filteredRealBuckets" style="width: 100%">
         <el-table-column prop="name" label="存储桶名称" min-width="150">
           <template #default="{ row }">
             <el-link type="primary" @click="viewDetail(row.name)">
@@ -135,6 +138,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
   </div>
 </template>
@@ -279,5 +283,36 @@ const toggleBucketStatus = async (bucket: any) => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 表格容器 - 移动端横向滚动 */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .filter-item {
+    margin-bottom: 12px;
+  }
+
+  :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  :deep(.el-table .el-button) {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .card-header {
+    font-size: 14px;
+  }
 }
 </style>

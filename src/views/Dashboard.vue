@@ -100,41 +100,43 @@
               <el-button text @click="refreshData">刷新</el-button>
             </div>
           </template>
-          <el-table :data="bucketHealthData" style="width: 100%">
-            <el-table-column prop="name" label="存储桶名称" />
-            <el-table-column label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.healthy ? 'success' : 'danger'">
-                  {{ row.healthy ? '健康' : '异常' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="type" label="类型" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.virtual ? 'primary' : 'info'" size="small">
-                  {{ row.virtual ? '虚拟桶' : '真实桶' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="使用率" width="150">
-              <template #default="{ row }">
-                <el-progress :percentage="row.usagePercent" :status="getProgressStatus(row.usagePercent)" />
-              </template>
-            </el-table-column>
-            <el-table-column prop="responseTime" label="响应时间" width="120">
-              <template #default="{ row }">
-                {{ row.responseTime }}ms
-              </template>
-            </el-table-column>
-            <el-table-column prop="lastCheck" label="最后检查时间" width="180" />
-            <el-table-column label="操作" width="150">
-              <template #default="{ row }">
-                <el-button text type="primary" size="small" @click="viewBucketDetail(row.name)">
-                  查看详情
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+          <div class="table-container">
+            <el-table :data="bucketHealthData" style="width: 100%">
+              <el-table-column prop="name" label="存储桶名称" min-width="150" />
+              <el-table-column label="状态" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="row.healthy ? 'success' : 'danger'">
+                    {{ row.healthy ? '健康' : '异常' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="type" label="类型" width="100">
+                <template #default="{ row }">
+                  <el-tag :type="row.virtual ? 'primary' : 'info'" size="small">
+                    {{ row.virtual ? '虚拟桶' : '真实桶' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column label="使用率" width="150">
+                <template #default="{ row }">
+                  <el-progress :percentage="row.usagePercent" :status="getProgressStatus(row.usagePercent)" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="responseTime" label="响应时间" width="120">
+                <template #default="{ row }">
+                  {{ row.responseTime }}ms
+                </template>
+              </el-table-column>
+              <el-table-column prop="lastCheck" label="最后检查时间" width="180" />
+              <el-table-column label="操作" width="150" fixed="right">
+                <template #default="{ row }">
+                  <el-button text type="primary" size="small" @click="viewBucketDetail(row.name)">
+                    查看详情
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -574,5 +576,39 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+/* 表格容器 - 移动端横向滚动 */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+
+  .stat-label {
+    font-size: 13px;
+  }
+
+  .stat-content {
+    gap: 12px;
+  }
+
+  :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  :deep(.el-table .el-button) {
+    font-size: 12px;
+  }
 }
 </style>

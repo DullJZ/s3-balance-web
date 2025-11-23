@@ -49,7 +49,7 @@
 
     <!-- 负载分布可视化 -->
     <el-row :gutter="20">
-      <el-col :xs="24" :lg="12">
+      <el-col :xs="24" :lg="12" class="chart-col">
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
@@ -57,11 +57,11 @@
               <el-button text @click="refreshData">刷新</el-button>
             </div>
           </template>
-          <div ref="requestChartRef" style="height: 350px"></div>
+          <div ref="requestChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
 
-      <el-col :xs="24" :lg="12">
+      <el-col :xs="24" :lg="12" class="chart-col">
         <el-card shadow="hover">
           <template #header>
             <div class="card-header">
@@ -69,7 +69,7 @@
               <el-button text @click="refreshData">刷新</el-button>
             </div>
           </template>
-          <div ref="storageChartRef" style="height: 350px"></div>
+          <div ref="storageChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -82,8 +82,9 @@
           <el-button text @click="refreshData">刷新</el-button>
         </div>
       </template>
-      <el-table :data="bucketLoadStats" style="width: 100%">
-        <el-table-column prop="name" label="存储桶名称" min-width="150" />
+      <div class="table-container">
+        <el-table :data="bucketLoadStats" style="width: 100%">
+          <el-table-column prop="name" label="存储桶名称" min-width="150" />
         <el-table-column label="类型" width="100">
           <template #default="{ row }">
             <el-tag :type="row.virtual ? 'primary' : 'info'" size="small">
@@ -125,6 +126,7 @@
           </template>
         </el-table-column>
       </el-table>
+      </div>
     </el-card>
   </div>
 </template>
@@ -481,5 +483,50 @@ onUnmounted(() => {
   font-size: 13px;
   color: #909399;
   line-height: 1.5;
+}
+
+/* 图表容器 */
+.chart-container {
+  height: 350px;
+  width: 100%;
+}
+
+/* 表格容器 - 移动端横向滚动 */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+  .page-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+  }
+
+  .chart-col {
+    margin-bottom: 20px;
+  }
+
+  .chart-container {
+    height: 280px;
+  }
+
+  :deep(.el-form-item__label) {
+    font-size: 13px;
+  }
+
+  :deep(.el-radio) {
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  :deep(.el-table) {
+    font-size: 13px;
+  }
+
+  .strategy-desc {
+    font-size: 12px;
+  }
 }
 </style>

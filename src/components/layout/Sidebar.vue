@@ -53,6 +53,10 @@ interface Props {
 
 defineProps<Props>()
 
+const emit = defineEmits<{
+  menuClick: []
+}>()
+
 const route = useRoute()
 const router = useRouter()
 
@@ -76,6 +80,8 @@ const menuRoutes = computed(() => {
 // 处理菜单点击
 const handleMenuClick = (path: string) => {
   router.push(path)
+  // 触发菜单点击事件（用于移动端关闭抽屉）
+  emit('menuClick')
 }
 </script>
 

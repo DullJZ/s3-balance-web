@@ -3,9 +3,11 @@
     <!-- 左侧：折叠按钮 -->
     <div class="header-left">
       <el-icon class="toggle-icon" @click="emit('toggleSidebar')">
-        <component :is="isCollapse ? 'Expand' : 'Fold'" />
+        <Operation v-if="isMobile" />
+        <Expand v-else-if="isCollapse" />
+        <Fold v-else />
       </el-icon>
-      <h2 class="header-title">S3 Balance 管理面板</h2>
+      <h2 v-if="!isMobile" class="header-title">S3 Balance 管理面板</h2>
     </div>
 
     <!-- 右侧：用户信息和操作 -->
@@ -13,21 +15,21 @@
       <!-- 健康状态指示器 -->
       <el-tooltip content="系统健康状态" placement="bottom">
         <el-badge :value="healthStatus.unhealthy" :hidden="healthStatus.unhealthy === 0">
-          <el-icon :size="20" :color="healthStatus.color">
+          <el-icon :size="isMobile ? 18 : 20" :color="healthStatus.color">
             <component :is="healthStatus.icon" />
           </el-icon>
         </el-badge>
       </el-tooltip>
 
-      <!-- 刷新按钮 -->
-      <el-tooltip content="刷新数据" placement="bottom">
+      <!-- 刷新按钮 (移动端隐藏) -->
+      <el-tooltip v-if="!isMobile" content="刷新数据" placement="bottom">
         <el-icon class="action-icon" :size="20" @click="refreshData">
           <Refresh />
         </el-icon>
       </el-tooltip>
 
-      <!-- 全屏按钮 -->
-      <el-tooltip content="全屏" placement="bottom">
+      <!-- 全屏按钮 (移动端隐藏) -->
+      <el-tooltip v-if="!isMobile" content="全屏" placement="bottom">
         <el-icon class="action-icon" :size="20" @click="toggleFullscreen">
           <FullScreen />
         </el-icon>
@@ -36,8 +38,8 @@
       <!-- 用户菜单 -->
       <el-dropdown>
         <div class="user-info">
-          <el-avatar :size="32" :icon="Avatar" />
-          <span class="username">管理员</span>
+          <el-avatar :size="isMobile ? 28 : 32" :icon="Avatar" />
+          <span v-if="!isMobile" class="username">管理员</span>
         </div>
         <template #dropdown>
           <el-dropdown-menu>
@@ -52,15 +54,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Expand, Fold, Refresh, FullScreen, Avatar } from '@element-plus/icons-vue'
+import { Expand, Fold, Refresh, FullScreen, Avatar, Operation } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-
-// 防止 TypeScript 报错未使用，但实际在模板中通过字符串使用
-// @ts-ignore
-const _icons = { Expand, Fold }
 
 interface Props {
   isCollapse: boolean
+  isMobile?: boolean
 }
 
 defineProps<Props>()
