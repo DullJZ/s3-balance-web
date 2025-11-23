@@ -23,15 +23,13 @@
         </el-form-item>
 
         <el-form-item label="健康检查周期">
-          <el-input v-model="config.health_check_period" placeholder="如: 30s">
-            <template #append>秒</template>
-          </el-input>
+          <el-input v-model="config.health_check_period" placeholder="如: 30s, 1m" />
+          <div class="form-hint">支持格式: 30s, 1m, 1h</div>
         </el-form-item>
 
         <el-form-item label="统计更新周期">
-          <el-input v-model="config.update_stats_period" placeholder="如: 60s">
-            <template #append>秒</template>
-          </el-input>
+          <el-input v-model="config.update_stats_period" placeholder="如: 60s, 1m" />
+          <div class="form-hint">支持格式: 30s, 1m, 1h</div>
         </el-form-item>
 
         <el-form-item label="重试次数">
@@ -39,9 +37,8 @@
         </el-form-item>
 
         <el-form-item label="重试延迟">
-          <el-input v-model="config.retry_delay" placeholder="如: 1s">
-            <template #append>秒</template>
-          </el-input>
+          <el-input v-model="config.retry_delay" placeholder="如: 1s, 500ms" />
+          <div class="form-hint">支持格式: 100ms, 1s, 1m</div>
         </el-form-item>
       </el-form>
     </el-card>
@@ -481,6 +478,12 @@ onUnmounted(() => {
   font-size: 13px;
   color: #909399;
   line-height: 1.5;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
 }
 
 /* 图表容器 */
