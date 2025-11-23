@@ -19,14 +19,14 @@
           <el-form-item label="后端服务地址">
             <el-input
               v-model="backendConfig.apiBaseUrl"
-              placeholder="如: http://localhost:8082"
+              placeholder="如: http://localhost:8080"
             >
               <template #prepend>
                 <el-icon><Link /></el-icon>
               </template>
             </el-input>
             <div class="form-hint">
-              完整的管理API地址，包含协议和端口（默认8082端口）
+              完整的API地址，端口与服务端口相同
             </div>
           </el-form-item>
 

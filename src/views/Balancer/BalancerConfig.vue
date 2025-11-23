@@ -16,7 +16,6 @@
             <el-radio label="round-robin">轮询（Round Robin）</el-radio>
             <el-radio label="least-space">最少剩余空间（Least Space）</el-radio>
             <el-radio label="weighted">加权随机（Weighted）</el-radio>
-            <el-radio label="consistent-hash">一致性哈希（Consistent Hash）</el-radio>
           </el-radio-group>
           <div class="strategy-desc">
             {{ getStrategyDescription(config.strategy) }}
@@ -439,7 +438,6 @@ const getStrategyDescription = (strategy: string) => {
     'round-robin': '按顺序依次分配请求到各个存储桶，适合负载均匀的场景',
     'least-space': '选择剩余空间最多的存储桶，适合空间利用优先的场景',
     'weighted': '根据权重随机分配请求，适合需要手动控制流量分配的场景',
-    'consistent-hash': '基于对象键的一致性哈希，确保相同对象总是路由到同一存储桶',
   }
   return descriptions[strategy] || ''
 }

@@ -26,7 +26,7 @@ export interface DatabaseConfig {
  * 负载均衡配置
  */
 export interface BalancerConfig {
-  strategy: 'round-robin' | 'least-space' | 'weighted' | 'consistent-hash' // 负载策略
+  strategy: 'round-robin' | 'least-space' | 'weighted' // 负载策略
   health_check_period: string // 健康检查周期
   update_stats_period: string // 统计更新周期
   retry_attempts: number // 重试次数
